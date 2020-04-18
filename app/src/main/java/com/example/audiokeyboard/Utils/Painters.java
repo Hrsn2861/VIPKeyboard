@@ -6,6 +6,9 @@ import android.graphics.Paint;
 public class Painters {
     public static Paint backgroundPaint,textPaint,boundPaint;
     public static Paint movePaint,originPaint,currentPaint, rankingPaint;
+    public static Paint.FontMetrics fontMetrics;
+    public static float fonttop, fontbottom;
+
     float screen_height_ratio = 1F;
     void initTextPaint() {
         textPaint = new Paint();
@@ -18,7 +21,7 @@ public class Painters {
         this.textPaint.setTextAlign(Paint.Align.CENTER);
         this.textPaint.setStrokeJoin(Paint.Join.ROUND);
         this.textPaint.setStrokeCap(Paint.Cap.ROUND);
-
+        this.textPaint.setTextSize(60);
     }
 
     void initBoundPaint() {
@@ -77,6 +80,12 @@ public class Painters {
         this.currentPaint.setStrokeWidth(3);
     }
 
+    void initMetrics() {
+        fontMetrics = textPaint.getFontMetrics();
+        fonttop = fontMetrics.top;
+        fontbottom = fontMetrics.bottom;
+    }
+
     void initAllPainters() {
         initBoundPaint();
         initTextPaint();
@@ -85,6 +94,7 @@ public class Painters {
         initBackgroundPaint();
         initOriginPaint();
         initCurrentPaint();
+        initMetrics();
     }
 
     public Painters() {

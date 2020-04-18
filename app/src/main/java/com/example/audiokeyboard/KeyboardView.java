@@ -23,6 +23,8 @@ public class KeyboardView extends AppCompatImageView {
     final int CURR_LAYOUT = Key.MODE_RELATIVE;
     final int INIT_LAYOUT = Key.MODE_INIT;
 
+    int[] allChar={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,20,21,22,23,24,25,26};
+
     public KeyboardView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs, 0);
         init();
@@ -60,6 +62,13 @@ public class KeyboardView extends AppCompatImageView {
                     this.keys[i].getBottom(CURR_LAYOUT)-10*screen_height_ratio);
             canvas.drawRoundRect(rect,10,10,painters.backgroundPaint);
         }
+
+        for (int i:allChar){
+            canvas.drawText(String.valueOf(this.keys[i].ch).toUpperCase(),
+                    this.keys[i].curr_x,this.keys[i].curr_y-Painters.fonttop/2F-Painters.fontbottom/2F,
+                    painters.textPaint);
+        }
+
     }
 
     Key keys[];

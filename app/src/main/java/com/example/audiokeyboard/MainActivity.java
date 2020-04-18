@@ -3,17 +3,24 @@ package com.example.audiokeyboard;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.Toast;
 
 import com.example.audiokeyboard.Utils.Key;
+
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
     final int KEYNUM = 33;
-    final String alphabet = "abcdefghijkl mnopqrstuvwxyz       ";
+    final String alphabet = "qwertyuiopasdfghjkl zxcvbnm       ";
     public Key keys[];
     final float keyboardWidth = 1080f;
     final float keyboardHeight = 680f;
@@ -58,6 +65,16 @@ public class MainActivity extends AppCompatActivity {
     final int CURR_LAYOUT = Key.MODE_RELATIVE;
 
     KeyboardView keyboardView;
+    TextSpeaker textSpeaker;
+
+    void defaultParams() {
+        screen_height_ratio = keyboardHeight / 907f;
+        screen_width_ratio = keyboardWidth / 1440f;
+        baseImageHeight = keyboardHeight;
+        baseImageWidth = keyboardHeight;
+        topThreshold = 0 * screen_height_ratio;
+        bottomThreshold = 907 * screen_height_ratio;
+    }
 
     void initKeys() {
         keys = new Key[KEYNUM];
@@ -126,28 +143,37 @@ public class MainActivity extends AppCompatActivity {
         for(int i=0;i<KEYNUM;i++) {
             keys[i].reset();
             keys[i].ch = alphabet.charAt(i);
-            Log.e("+++++++++++++++++++", keys[i].toString());
         }
 
     }
 
+    void initTts() {
+        textSpeaker = new TextSpeaker(MainActivity.this);
+    }
+
     void init() {
-        screen_height_ratio = 680f / 907f;
-        screen_width_ratio = 1080f / 1440f;
-        baseImageHeight = 680f;
-        baseImageWidth = 1080f;
-        topThreshold = 0 * screen_height_ratio;
-        bottomThreshold = 907 * screen_height_ratio;
+        keyboardView = (KeyboardView) (findViewById(R.id.keyboard));
+        textSpeaker = new TextSpeaker(MainActivity.this);
+        defaultParams();
         initKeys();
+        keyboardView.setKeys(keys);
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_relative);
-        keyboardView = (KeyboardView)(findViewById(R.id.keyboard));
         init();
-        keyboardView.setKeys(keys);
+
+        Log.e("peech is voer", "Speech is over");
+    }
+
+    public boolean onTouchEvent(MotionEvent event) {
+        if(event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+            Log.e("-------------", "touch down");
+            textSpeaker.speak("touch");
+        }
+        return true;
     }
 
 }

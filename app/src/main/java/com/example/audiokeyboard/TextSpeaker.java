@@ -2,36 +2,43 @@ package com.example.audiokeyboard;
 
 import android.content.Context;
 import android.speech.tts.TextToSpeech;
+import android.util.Log;
 import android.widget.Toast;
 
 import java.util.Locale;
 
-public class TextSpeaker {
+public class TextSpeaker implements TextToSpeech.OnInitListener{
+
+    final String TAG = "TextSpeaker";
+
     TextToSpeech tts;
-    public float voiceSpeed = 2.0f;
+    public float voiceSpeed = 1.0f;
 
     public TextSpeaker(Context context) {
         init(context);
     }
 
     void init(final Context context) {
-        tts = new TextToSpeech(context, new TextToSpeech.OnInitListener() {
-            @Override
-            public void onInit(int status){
-                if (status == tts.SUCCESS){
-                    int result = tts.setLanguage(Locale.ENGLISH);
-                    if (result != TextToSpeech.LANG_COUNTRY_AVAILABLE && result != TextToSpeech.LANG_AVAILABLE){
-                        Toast.makeText(context, "TTS暂时不支持英文朗读！", Toast.LENGTH_SHORT);
-                    }
-                }
-            }
-        });
+        tts = new TextToSpeech(context, this);
         tts.setSpeechRate(voiceSpeed);
         tts.setPitch(1.0f);
     }
 
-    public void speak(String text2speak) {
+    @Override
+    public void onInit(int status) {
+        if(status == TextToSpeech.SUCCESS) {
+            int result = tts.setLanguage(Locale.ENGLISH);
+            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                Log.e(TAG, "language not supported!");
+            }
+        }
+        Log.e(TAG, "init is over!");
+    }
 
+    public void speak(String text2speak) { speak(text2speak, true); }
+    public void speak(String text2speak, boolean flush) {
+        int mode = flush ? TextToSpeech.QUEUE_FLUSH : TextToSpeech.QUEUE_ADD;
+        this.tts.speak(text2speak, mode, null, null);
     }
 
 }
