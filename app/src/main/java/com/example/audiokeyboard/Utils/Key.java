@@ -16,7 +16,7 @@ public class Key {
     float tapRange = 0.5f;
 
     public static final int MODE_INIT = 0;
-    public static final int MODE_RELATIVE = 1;
+    public static final int MODE_VIP = 1;
     final String TAG = "Key Module";
 
     public Key() {
@@ -36,7 +36,7 @@ public class Key {
         if(mode == MODE_INIT) {
             return (init_x-x)*(init_x-x)+(init_y-y)*(init_y-y);
         }
-        if(mode == MODE_RELATIVE) {
+        if(mode == MODE_VIP) {
             return (curr_x-x)*(curr_x-x)+(curr_y-y)*(curr_y-y);
         }
         else {
@@ -49,7 +49,7 @@ public class Key {
         if(mode == MODE_INIT) {
             return init_y + init_height / 2;
         }
-        else if(mode == MODE_RELATIVE) {
+        else if(mode == MODE_VIP) {
             return curr_y + curr_height / 2;
         }
         else {
@@ -63,7 +63,7 @@ public class Key {
         // mode==1 current_layout
         if(mode==MODE_INIT){
             return init_y-init_height/2F;
-        }else if(mode==MODE_RELATIVE){
+        }else if(mode== MODE_VIP){
             return curr_y-curr_height/2F;
         }else{
             Log.e(TAG, "getTop: no mode found");
@@ -76,7 +76,7 @@ public class Key {
         // mode==1 current_layout
         if(mode==MODE_INIT){
             return init_x-init_width/2F;
-        }else if(mode==MODE_RELATIVE){
+        }else if(mode== MODE_VIP){
             return curr_x-curr_width/2F;
         }else{
             Log.e(TAG, "getLeft: no mode found");
@@ -89,7 +89,7 @@ public class Key {
         // mode==1 current_layout
         if(mode==MODE_INIT){
             return init_x+init_width/2F;
-        }else if(mode==MODE_RELATIVE){
+        }else if(mode== MODE_VIP){
             return curr_x+curr_width/2F;
         }else{
             Log.e(TAG, "getRight: no mode found");
@@ -117,28 +117,28 @@ public class Key {
 
     float getBottom_tap(int mode) {
         if(mode == MODE_INIT) return init_y + tapRange * init_height / 2f;
-        else if(mode == MODE_RELATIVE) return curr_y + tapRange * curr_height / 2f;
+        else if(mode == MODE_VIP) return curr_y + tapRange * curr_height / 2f;
         else Log.e(TAG, "getBottom_tap: no mode found");
         return -1;
     }
 
     float getTop_tap(int mode) {
         if(mode == MODE_INIT) return init_y - tapRange * init_height / 2f;
-        else if(mode == MODE_RELATIVE) return init_y - tapRange * curr_height / 2f;
+        else if(mode == MODE_VIP) return init_y - tapRange * curr_height / 2f;
         else Log.e(TAG, "getTop_tap: no mode found");
         return -1;
     }
 
     float getLeft_tap(int mode) {
         if(mode == MODE_INIT) return init_x - tapRange * init_width / 2f;
-        else if(mode == MODE_RELATIVE) return curr_x - tapRange * curr_width / 2f;
+        else if(mode == MODE_VIP) return curr_x - tapRange * curr_width / 2f;
         else Log.e(TAG, "getLeft_tap: no mode found");
         return -1;
     }
 
     float getRight_tap(int mode) {
         if(mode == MODE_INIT) return init_x + tapRange * init_width / 2f;
-        else if(mode == MODE_RELATIVE) return curr_x + tapRange * init_width / 2f;
+        else if(mode == MODE_VIP) return curr_x + tapRange * init_width / 2f;
         else Log.e(TAG, "getRight_tap: no mode found");
         return -1;
     }

@@ -41,4 +41,8 @@ public class TextSpeaker implements TextToSpeech.OnInitListener{
         this.tts.speak(text2speak, mode, null, null);
     }
 
+    public void stop() {
+        this.tts.stop();
+    }
+
 }

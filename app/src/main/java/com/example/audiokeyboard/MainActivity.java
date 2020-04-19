@@ -2,22 +2,20 @@ package com.example.audiokeyboard;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.content.Context;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
-import android.speech.tts.TextToSpeech;
-import android.util.Log;
 import android.view.MotionEvent;
-import android.view.View;
-import android.widget.Toast;
 
+import com.example.audiokeyboard.Utils.DataRecorder;
 import com.example.audiokeyboard.Utils.Key;
-
-import java.util.Locale;
+import com.example.audiokeyboard.Utils.Letter;
 
 public class MainActivity extends AppCompatActivity {
+
+    int getkey_mode;
+    final int GETKEY_STRICT = 1;
+    final int GETKEY_LOOSE = 0;
+
+    final long MIN_TIME_GAP = 1000;
 
     final int KEYNUM = 33;
     final String alphabet = "qwertyuiopasdfghjkl zxcvbnm       ";
@@ -50,7 +48,8 @@ public class MainActivity extends AppCompatActivity {
     final int SPACE=30;
     final int COMMA=31;
     final int PERIOD=32;
-    int[] allChar={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,20,21,22,23,24,25,26};
+    final int[] allChar={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,20,21,22,23,24,25,26};
+    final int[] keyPos={10,24,22,12,2,13,14,15,7,16,17,18,26,25,8,9,0,3,11,4,6,23,1,21,5,20};
 
     final char KEY_NOT_FOUND = '*';
     final char shiftCh=KEY_NOT_FOUND;
@@ -62,18 +61,23 @@ public class MainActivity extends AppCompatActivity {
     final char backspaceCh=KEY_NOT_FOUND;
 
     final int INIT_LAYOUT = Key.MODE_INIT;
-    final int CURR_LAYOUT = Key.MODE_RELATIVE;
+    final int VIP_LAYOUT = Key.MODE_VIP;
+    int curr_layout;
 
+    Letter currentChar;
     KeyboardView keyboardView;
     TextSpeaker textSpeaker;
+    DataRecorder recorder;
+    MyGestureDetector gestureDetector;
 
     void defaultParams() {
         screen_height_ratio = keyboardHeight / 907f;
         screen_width_ratio = keyboardWidth / 1440f;
         baseImageHeight = keyboardHeight;
-        baseImageWidth = keyboardHeight;
+        baseImageWidth = keyboardWidth;
         topThreshold = 0 * screen_height_ratio;
         bottomThreshold = 907 * screen_height_ratio;
+        curr_layout = INIT_LAYOUT;
     }
 
     void initKeys() {
@@ -153,10 +157,12 @@ public class MainActivity extends AppCompatActivity {
 
     void init() {
         keyboardView = (KeyboardView) (findViewById(R.id.keyboard));
-        textSpeaker = new TextSpeaker(MainActivity.this);
+        recorder = new DataRecorder();
+        currentChar = new Letter('*');
+        initTts();
         defaultParams();
         initKeys();
-        keyboardView.setKeys(keys);
+        keyboardView.setKeysAndRefresh(keys);
     }
 
     @Override
@@ -164,15 +170,59 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_relative);
         init();
+    }
 
-        Log.e("peech is voer", "Speech is over");
+    public char getKeyPosition(float x, float y, int mode) {
+        char key = KEY_NOT_FOUND;
+        if(y < topThreshold || y > bottomThreshold) return key;
+        float min_dist = Float.MAX_VALUE;
+        for(int i=0;i<KEYNUM;i++) {
+            if(keys[i].getDist(x, y, mode) < min_dist) {
+                key = keys[i].ch;
+                min_dist = keys[i].getDist(x, y, mode);
+            }
+        }
+
+        if(getkey_mode == GETKEY_LOOSE) {
+            return key;
+        }
+        else if(key != KEY_NOT_FOUND && getkey_mode == GETKEY_STRICT){
+            int pos = this.keyPos[key-'a'];
+            if(keys[pos].contain(x, y, mode)) return key;
+            else return KEY_NOT_FOUND;
+        }
+        return key;
+    }
+
+    void refresh() {
+        this.keyboardView.setKeysAndRefresh(keys);
+    }
+
+    public void processTouchDown(float x ,float y){
+        this.textSpeaker.stop();
+        currentChar.setChar(getKeyPosition(x, y, curr_layout));
+        textSpeaker.speak(currentChar.getChar()+"");
+        if(currentChar.getChar() != '*') { refresh(); }
+    }
+
+    public void processTouchUp() {
+        recorder.add(currentChar);
+        if(currentChar.getTimeGap() > MIN_TIME_GAP) {
+            textSpeaker.speak(currentChar.getChar()+"");
+        }
+    }
+
+    public void processTouchMove(float x, float y) {
+        this.textSpeaker.stop();
+        currentChar.setChar(getKeyPosition(x, y, curr_layout));
     }
 
     public boolean onTouchEvent(MotionEvent event) {
-        if(event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-            Log.e("-------------", "touch down");
-            textSpeaker.speak("touch");
-        }
+        float x = event.getX();
+        float y = event.getY() - this.getWindowManager().getDefaultDisplay().getHeight() + keyboardHeight;
+        if(event.getActionMasked() == MotionEvent.ACTION_DOWN) { processTouchDown(x,y); }
+        else if(event.getActionMasked() == MotionEvent.ACTION_UP) { processTouchUp(); }
+        else if(event.getActionMasked() == MotionEvent.ACTION_MOVE) { processTouchMove(x, y); }
         return true;
     }
 

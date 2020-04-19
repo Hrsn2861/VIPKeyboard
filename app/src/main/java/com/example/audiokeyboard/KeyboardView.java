@@ -2,10 +2,8 @@ package com.example.audiokeyboard;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.RectF;
 import android.util.AttributeSet;
-import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatImageView;
@@ -20,7 +18,7 @@ public class KeyboardView extends AppCompatImageView {
         init();
     }
 
-    final int CURR_LAYOUT = Key.MODE_RELATIVE;
+    final int CURR_LAYOUT = Key.MODE_VIP;
     final int INIT_LAYOUT = Key.MODE_INIT;
 
     int[] allChar={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,20,21,22,23,24,25,26};
@@ -73,7 +71,12 @@ public class KeyboardView extends AppCompatImageView {
 
     Key keys[];
 
-    public void setKeys(Key[] keys) {
+    /**
+     *
+     * @param keys 更新之后的键盘位置
+     * 更新现在的键盘位置之后更新
+     */
+    public void setKeysAndRefresh(Key[] keys) {
         this.keys = keys;
         invalidate();
     }
