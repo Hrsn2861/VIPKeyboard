@@ -2,8 +2,10 @@ package com.example.audiokeyboard;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.PointF;
 import android.graphics.RectF;
 import android.util.AttributeSet;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatImageView;
@@ -13,6 +15,7 @@ import com.example.audiokeyboard.Utils.Painters;
 
 public class KeyboardView extends AppCompatImageView {
 
+    static final String TAG = "KeyboardView";
     public KeyboardView(Context context) {
         super(context);
         init();
@@ -54,7 +57,8 @@ public class KeyboardView extends AppCompatImageView {
 
     void drawKeys(Canvas canvas) {
         for(int i=0;i<this.keys.length;i++) {
-            RectF rect = new RectF(this.keys[i].getLeft(CURR_LAYOUT)+5*screen_width_ratio,
+            RectF rect = new RectF(
+                    this.keys[i].getLeft(CURR_LAYOUT)+5*screen_width_ratio,
                     this.keys[i].getTop(CURR_LAYOUT)+10*screen_height_ratio,
                     this.keys[i].getRight(CURR_LAYOUT)-5*screen_width_ratio,
                     this.keys[i].getBottom(CURR_LAYOUT)-10*screen_height_ratio);

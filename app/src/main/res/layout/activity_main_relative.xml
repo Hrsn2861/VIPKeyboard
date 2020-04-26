@@ -1,116 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="match_parent">
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
     <com.example.audiokeyboard.KeyboardView
         android:id="@+id/keyboard"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_alignParentStart="true"
         android:layout_alignParentBottom="true"
         android:layout_marginStart="0dp"
         android:layout_marginBottom="-2dp"
         android:adjustViewBounds="true"
         android:src="@drawable/keyboard_old"
-        android:scaleType="fitCenter"></com.example.audiokeyboard.KeyboardView>
+        android:scaleType="fitEnd"></com.example.audiokeyboard.KeyboardView>
 
     <TextView
-        android:id="@+id/text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_below="@+id/init_mode_button"
-        android:layout_marginStart="13dp"
-        android:layout_marginTop="18dp"
-        android:text=""
-        android:typeface="monospace"
-        android:textSize="30sp" />
-
-    <TextView
-        android:id="@+id/candidates"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/text"
-        android:layout_below="@+id/text"
-        android:layout_marginTop="54dp"
-        android:textSize="22sp"
-        android:typeface="monospace"
-        android:text="" />
-    <TextView
-        android:id="@+id/elapsedtime"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="0"
-        android:textSize="22sp"
-        android:layout_below="@+id/speedButton"
-        android:layout_alignStart="@+id/readList" />
-    <TextView
-        android:id="@+id/voice_speed_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/elapsedtime"
-        android:layout_below="@+id/elapsedtime"
-        android:text="50"
-        android:textAppearance="@android:style/TextAppearance.Material.Small"
-        android:textSize="22sp" />
-    <TextView
-        android:id="@+id/readList"
-        android:layout_width="150dp"
-        android:layout_height="wrap_content"
-        android:layout_alignTop="@+id/candidates"
-        android:layout_alignParentRight="true"
-        android:textSize="22sp"
-        android:text="" />
-    <Button
-        android:id="@+id/confirm_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Confirm"
-        android:layout_alignParentTop="true"
-        android:layout_toEndOf="@+id/init_mode_button" />
-    <Button
-        android:id="@+id/init_mode_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:text="relative" />
-    <Button
-        android:id="@+id/speedButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="speed"
-        android:layout_alignParentTop="true"
-        android:layout_toEndOf="@+id/confirm_button" />
-    <SeekBar
+        android:id="@+id/mytext"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/seekBar"
-        android:layout_above="@id/keyboard"
-        android:layout_marginBottom="40dp"
-        android:layout_alignParentStart="true"
-        android:max="100"
-        android:secondaryProgress="0"
-        android:progress="0"
-        android:indeterminate="false" />
-
-    <TextView
-        android:id="@+id/seekBarText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="seekBarText"
-        android:textSize="22sp"
-        android:layout_marginBottom="40dp"
-        android:layout_above="@id/seekBar"
-        android:layout_centerHorizontal="true"/>
-
-    <TextView
-        android:id="@+id/recordResult"
-        android:layout_width="150dp"
-        android:layout_height="20dp"
-        android:layout_alignParentTop="true"
-        android:layout_alignStart="@+id/elapsedtime"
-        android:layout_marginTop="131dp"
-        android:text="TextView" />
+        android:layout_height="match_parent"
+        android:paddingLeft="20dp"
+        android:paddingTop="20dp"
+        android:textSize="20dp">
+    </TextView>
 
 </RelativeLayout>
