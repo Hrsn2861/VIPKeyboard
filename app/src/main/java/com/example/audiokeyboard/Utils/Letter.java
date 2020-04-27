@@ -26,4 +26,8 @@ public class Letter {
     public long getTimeGap() { return getTimeGap(System.currentTimeMillis()); }
     public long getTimeGap(long time) { return Math.abs(time - this.timeStamp); }
 
+    public void setCorrect(boolean c) { this.isCorrect = c; }
+
+    boolean isCorrect;
+
 }

@@ -14,6 +14,11 @@ import com.example.audiokeyboard.Utils.KeyPos;
 import com.example.audiokeyboard.Utils.Letter;
 import com.example.audiokeyboard.Utils.MotionPoint;
 import com.example.audiokeyboard.Utils.MotionSeperator;
+import com.example.audiokeyboard.Utils.Word;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -42,6 +47,9 @@ public class MainActivity extends AppCompatActivity {
     MotionPoint startPoint = new MotionPoint(0, 0);
     MotionPoint endPoint =  new MotionPoint(0, 0);
 
+    final int DICT_SIZE = 50000;
+    ArrayList<Word> dictEng;
+
     void defaultParams() {
         currMode = Key.MODE_INIT;
     }
@@ -59,6 +67,27 @@ public class MainActivity extends AppCompatActivity {
         initTts();
         defaultParams();
         keyboardView.setKeysAndRefresh(keyPos.keys);
+    }
+
+    void initDict() {
+        dictEng = new ArrayList<>();
+        Log.i("init", "start loading dict_eng");
+        BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().openRawResource(R.raw.dict_eng)));
+        String line;
+        try{
+            int lineNo = 0;
+            while ((line = reader.readLine()) != null){
+                lineNo++;
+                String[] ss = line.split(" ");
+                dictEng.add(new Word(ss[0], Double.valueOf(ss[1])));
+                if (lineNo == DICT_SIZE)
+                    break;
+            }
+            reader.close();
+            Log.i("init", "read dict_eng finished " + dictEng.size());
+        } catch (Exception e){
+            Log.i("init", "read dict_eng failed");
+        }
     }
 
     @Override

@@ -413,6 +413,7 @@ public class KeyPos {
         return true;
     }
 
+    // move Character ch to the location x and y;
     public boolean shift(char ch, float x, float y) {
         if(ch == KEY_NOT_FOUND) return false;
         int index = getCharIndex(ch);
