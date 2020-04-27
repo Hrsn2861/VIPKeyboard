@@ -2,6 +2,9 @@ package com.example.audiokeyboard.Utils;
 
 import androidx.annotation.Nullable;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
 public class KeyPos {
     final int KEYNUM = 33;
     public Key keys[];
@@ -42,6 +45,8 @@ public class KeyPos {
     final int[] keyPos={10,24,22,12,2,13,14,15,7,16,17,18,26,25,8,9,0,3,11,4,6,23,1,21,5,20};
     final String alphabet = "qwertyuiopasdfghjkl zxcvbnm       ";
 
+    final int SCALING_NUM = 3;
+
     final char KEY_NOT_FOUND = '*';
     final char shiftCh=KEY_NOT_FOUND;
     final char symbolCh=KEY_NOT_FOUND;
@@ -56,6 +61,21 @@ public class KeyPos {
 
     final int GETKEY_STRICT = 1;
     final int GETKEY_LOOSE = 0;
+
+    final int ADJUST_BODILY = 1;
+    final int ADJUST_RESPECTIVELY = 0;
+    int moveBodily = 0;
+
+    final HashMap<Character,String> nearMapping = new HashMap<Character, String>() {
+        {
+            put('q', "wa"); put('w', "qase"); put('e', "wsdr"); put('r', "edft"); put('t', "rfgy");
+            put('y', "tghu"); put('u', "yhji"); put('i', "uyko"); put('o', "iklp"); put('p', "ol");
+            put('a', "qwsz"); put('s', "weadzx"); put('d', "ersfzxc"); put('f', "rtdgxcv"); put('g', "tyfhcvb");
+            put('h', "yugjvbn"); put('j', "uihkbnm"); put('k', "iojlnm"); put('l', "opkm");
+            put('z', "asdx"); put('x', "sdfzc"); put('c', "dfgxv"); put('v', "fghcb");
+            put('b', "ghjvn"); put('n', "hjkbm"); put('m', "jkln");
+        }
+    };
 
     void initKeys() {
         keys = new Key[KEYNUM];
@@ -138,7 +158,7 @@ public class KeyPos {
         bottomThreshold = 907 * screen_height_ratio + paddingTop;
     }
 
-    public char getKeyByPosition(float x, float y, int mode, @Nullable int getkey_mode) {
+    public char getKeyByPosition(float x, float y, int mode, int getkey_mode) {
         char key = KEY_NOT_FOUND;
         if(y < topThreshold || y > bottomThreshold) return key;
         float min_dist = Float.MAX_VALUE;
@@ -157,6 +177,146 @@ public class KeyPos {
             else return KEY_NOT_FOUND;
         }
         return key;
+    }
+
+    public char getKeyByPosition(float x, float y, int mode) { return getKeyByPosition(x, y, mode, GETKEY_LOOSE); }
+
+    public String getKeyAround(float x, float y, int mode, int getkey_mode) {
+        char ch = getKeyByPosition(x, y, mode, getkey_mode);
+        return getKeyAround(ch);
+    }
+
+    int getCharIndex(char ch) {
+        if(ch >= 'a' && ch <= 'z')
+            return allChar[ch-'a'];
+        else
+            return -1;
+    }
+
+    int getRowByIndex(int index) {
+        if(index <= P) return 0;
+        else if(index <=L) return 1;
+        else return 2;
+    }
+
+    public String getKeyAround(char ch) {
+        return nearMapping.get(ch);
+    }
+
+    boolean shiftRow_linear(char ch, float dx) {                   // return whether the layout is changed
+        int index = getCharIndex(ch);
+        if(index == SHIFT || index == BACKSPACE || index == SYMBOL) return false;
+        if(dx > 0)
+            if(index == P || index == L) return false;
+        else
+            if(index == Q || index == A) return false;
+        int row = getRowByIndex(index);
+        if(row == -1) return false;
+        int left = -1, right = -1;
+        switch (row) {
+            case 0:
+                left = Q; right = P; break;
+            case 1:
+                left = A; right = L; break;
+            case 2:
+                left = Z; right = M; break;
+        }
+
+        shiftRowByIndex_linear(index, left, right, dx);
+        adjustRowTo(row);
+
+        return true;
+    }
+
+    void shiftRowByIndex_linear(int index, int left, int right, float dx) {
+        int begin = Math.min(index, Q+SCALING_NUM);             // only scale the first or the last letters
+        int leftNum = begin - left + 1;
+        int end = Math.max(index, P-SCALING_NUM);
+        int rightNum = right - end + 1;
+        float leftRatio = 2f / (leftNum+1) / leftNum;
+        float rightRatio = 2f / (rightNum+1) / rightNum;
+        for(int i=left;i<=begin;i++) {
+            keys[i].curr_x += (leftRatio*(i+1)*dx/2f);
+            keys[i].curr_width += (leftRatio*(i+1)*dx);
+        }
+        for(int i=end;i<=right;i++) {
+            keys[i].curr_x += (rightRatio*(i+1)*dx/2f);
+            keys[i].curr_width += (rightRatio*(i+1)*dx);
+        }
+    }
+
+    void adjustRowTo(int row) {
+        int left, right;
+        if(moveBodily == ADJUST_RESPECTIVELY) {
+            for(int i=0;i<3;i++) {
+                if(i == row) continue;
+                if(row == 0) { left = Q; right = P; }
+                else if(row == 1) { left = A; right=L; }
+                else { left = Z; right = M; }
+                for(int j=left;j<=right;j++) {
+                    keys[j].curr_x = keys[j].init_x;
+                    keys[j].curr_width = keys[i].init_width;
+                }
+            }
+        }
+        assert moveBodily == ADJUST_BODILY;
+        switch (row) {
+            case 0:
+                for(int i=A;i<=L;i++) {
+                    keys[i].curr_x = (keys[i-(A-Q)].curr_x+keys[i-(A-W)].curr_x)/2f;
+                    keys[i].curr_width = (keys[i-(A-Q)].curr_x-keys[i-(A-W)].curr_x);
+                }
+                for(int i=Z;i<=M;i++) {
+                    keys[i].curr_x  = (keys[i-(Z-S)].curr_x);
+                    keys[i].curr_width = (keys[i-(Z-S)].curr_width);
+                }
+                break;
+            case 1:
+                keys[Q].curr_x = keys[A].curr_x / 2f;
+                keys[Q].curr_width = keys[A].curr_width;
+                keys[P].curr_x = keyboardWidth - keys[L].curr_x;
+                keys[P].curr_width = keyboardWidth - keys[L].curr_width / 2f;
+                // match the first line
+                for(int i=W;i<=O;i++) {
+                    keys[i].curr_x = (keys[i+(A-W)].curr_x + keys[i+(S-W)].curr_x) / 2f;
+                    keys[i].curr_width = keys[i+(S-W)].curr_x - keys[i+(A-W)].curr_x;
+                }
+                // match the third line
+                for(int i=Z;i<=M;i++) {
+                    keys[i].curr_x = keys[i-(Z-S)].curr_x;
+                    keys[i].curr_width = keys[i-(Z-S)].curr_width;
+                }
+                break;
+            case 2:
+                // match the second line
+                for(int i=S;i<K;i++) {
+                    keys[i].curr_x = keys[i+(Z-S)].curr_x;
+                    keys[i].curr_width = keys[i+(Z-S)].curr_width;
+                }
+                keys[A].curr_width = keys[S].getLeft(VIP_LAYOUT)*2f/3f;
+                keys[A].curr_x = keys[S].curr_width;
+                keys[L].curr_width = (keyboardWidth - keys[K].getRight(VIP_LAYOUT)*2f/3f);
+                keys[L].curr_x = keys[K].getRight(VIP_LAYOUT)+this.keys[L].curr_width/2f;
+
+                // match the first line
+                keys[Q].curr_x = keys[A].curr_x/2f;
+                keys[Q].curr_width = keys[A].curr_x;
+                keys[P].curr_width = keyboardWidth - keys[L].curr_x;
+                keys[P].curr_x = keyboardWidth - keys[L].curr_width / 2f;
+                for(int i=W;i<=O;i++) {
+                    keys[i].curr_x = (keys[i+(A-W)].curr_x+keys[i+(S-W)].curr_x) / 2f;
+                    keys[i].curr_width = keys[i+(S-W)].curr_x - keys[i+(A-W)].curr_x;
+                }
+                break;
+        }
+    }
+
+    public void shiftKeys(float x, float y, char from, char to, int mode) {
+        if(from == to) return;
+        if(mode == INIT_LAYOUT) return;
+        int fromIndex = getCharIndex(from);
+        int toIndex = getCharIndex(to);
+
     }
 
     public KeyPos() {

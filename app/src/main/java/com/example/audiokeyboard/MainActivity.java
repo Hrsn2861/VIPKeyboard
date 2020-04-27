@@ -93,7 +93,6 @@ public class MainActivity extends AppCompatActivity {
                 recorder.removeLast();
                 textSpeaker.speak(deleteLast()+" removed");
                 currentChar.setChar(KEY_NOT_FOUND);
-                Log.e(TAG, recorder.getDataAsString());
                 break;
             case MotionSeperator.FLING_RIGHT:                   // this means word selected
                 String s = recorder.getDataAsString();
@@ -107,16 +106,16 @@ public class MainActivity extends AppCompatActivity {
             case MotionSeperator.NORMAL_MOVE:
             default:
                 currentChar.setChar(keyPos.getKeyByPosition(x, y, currMode, getkey_mode));
-                Log.e(TAG, currentChar.getChar()+" is up");
                 recorder.add(currentChar.getChar());
                 appendText(currentChar.getChar()+"");
-                Log.e(TAG, recorder.getDataAsString());
         }
     }
 
     public void processTouchDown(float x ,float y){
         this.textSpeaker.stop();
-        currentChar.setChar(keyPos.getKeyByPosition(x, y, currMode, getkey_mode));
+        char ch = keyPos.getKeyByPosition(x, y, currMode, getkey_mode);
+        String near = keyPos.getKeyAround(x, y, currMode, getkey_mode);
+        currentChar.setChar(ch);
         textSpeaker.speak(currentChar.getChar()+"");
         if(currentChar.getChar() != '*') { refresh(); }
     }
