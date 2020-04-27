@@ -149,6 +149,23 @@ public class Key {
         curr_width = init_width;
         curr_height = init_height;
     }
+    /*
+    1 2 3
+    4 5 6
+    7 8 9
+     */
+    public int containTap(float x, float y, int mode) {
+        int[][] quadrant={{1,2,3},{4,5,6},{7,8,9}};
+        int row=0;
+        int col=0;
+        if(x<getLeft_tap(mode)) col=0;
+        else if(x>getRight_tap(mode)) col=2;
+        else col=1;
+        if(y<getTop_tap(mode)) row=0;
+        else if(y>getBottom_tap(mode)) row=2;
+        else row=1;
+        return quadrant[row][col];
+    }
 
     @Override
     public String toString() {
