@@ -32,7 +32,7 @@ public class TextSpeaker implements TextToSpeech.OnInitListener{
                 Log.e(TAG, "language not supported!");
             }
         }
-        Log.e(TAG, "init is over!");
+        Log.e(TAG, "speaker init is over!");
     }
 
     public void speak(String text2speak) { speak(text2speak, true); }

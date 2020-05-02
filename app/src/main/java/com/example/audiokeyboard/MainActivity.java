@@ -31,6 +31,8 @@ public class MainActivity extends AppCompatActivity {
     final long MIN_TIME_GAP = 1000;
     final char KEY_NOT_FOUND = '*';
 
+    final double minVelocityToStopSpeaking = 0.2;
+    final double maxVelocityToDetermineHover = 0.1;
     final long minTimeGapThreshold = 500;               // 如果大于这个时间长度说明key是确定的；
 
     int currMode;
@@ -48,6 +50,8 @@ public class MainActivity extends AppCompatActivity {
     // record the edge pointer moved along
     MotionPoint startPoint = new MotionPoint(0, 0);
     MotionPoint endPoint =  new MotionPoint(0, 0);
+    MotionPoint currPoint = new MotionPoint(0, 0);
+    char currMoveCharacter = KEY_NOT_FOUND;
 
     final int DICT_SIZE = 50000;
 
@@ -163,7 +167,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void processTouchMove(float x, float y) {
-        this.textSpeaker.stop();
+        char curr = keyPos.getKeyByPosition(x, y, currMode);
+        if(curr != currMoveCharacter) {
+            textSpeaker.speak(curr+"");
+            currMoveCharacter = curr;
+        }
     }
 
     public boolean onTouchEvent(MotionEvent event) {
@@ -188,8 +196,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void debug() {
-        predictor.getMultiByPointAndKey(0, 0, 'q');
-        Log.e("this is a warning: ",  KeyPos.getKeyByChar('q').curr_x+" "+ KeyPos.getKeyByChar('q').curr_y);
+
     }
 
 }

@@ -7,7 +7,9 @@ import java.util.HashMap;
 
 public class KeyPos {
     final int KEYNUM = 33;
-    public static Key keys[];
+    public Key keys[];
+    public static float static_initx[];
+    public static float static_inity[];
     final float keyboardWidth = 1080f;
     final float keyboardHeight = 680f;
     float bottomThreshold;
@@ -469,16 +471,25 @@ public class KeyPos {
     public KeyPos() {
         defaultParams();
         initKeys();
+        initStatic();
     }
 
-    public static Key getKeyByChar(char c) {
-        int index = keyPos[c-'a'];
-        return keys[index];
+    public void initStatic() {
+        static_initx = new float[keys.length];
+        static_inity = new float[keys.length];
+        for(int i=0;i<keys.length;i++) {
+            static_initx[i] = keys[i].init_x;
+            static_inity[i] = keys[i].init_y;
+        }
+        return;
     }
 
-    public Key getKeyByCharDefault(char c) {
-        int index = keyPos[c-'a'];
-        return keys[index];
+    public static float getInitxByChar(char c) {
+        return static_initx[keyPos[c-'a']];
+    }
+
+    public static float getInityByChar(char c) {
+        return static_inity[keyPos[c-'a']];
     }
 
 }

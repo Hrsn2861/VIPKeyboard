@@ -17,7 +17,6 @@ public class MotionSeperator {
         long timeGap = p1.getTimeBetween(p2);
         double dist = p1.getDistance(p2);
         double velocity = dist / timeGap;
-        Log.e("-------------", velocity+"");
         if(velocity > MIN_FLING_VELOCITY)
             return getFlingType(p1, p2);
         else

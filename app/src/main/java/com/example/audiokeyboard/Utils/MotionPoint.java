@@ -17,6 +17,9 @@ public class MotionPoint {
     public float getDx(MotionPoint mp) { return this.x - mp.x; }
     public float getDy(MotionPoint mp) { return this.y - mp.y; }
 
+    public float getX() { return this.x; }
+    public float getY() { return this.y; }
+
     public double getDistance(MotionPoint mp) {
         return Math.sqrt(getDx(mp)*getDx(mp)+getDy(mp)*getDy(mp));
     }

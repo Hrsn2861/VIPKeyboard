@@ -66,9 +66,8 @@ public class Predictor {
 
     public double getMultiByPointAndKey(float x, float y, char c) {
         double ret = 1.0;
-        Log.e("this is a warning: ",  KeyPos.getKeyByChar(c).curr_x+" "+ KeyPos.getKeyByChar(c).curr_y);
-        ret *= Normal(x, KeyPos.getKeyByChar(c).init_x, 52.7);
-        ret *= Normal(y, KeyPos.getKeyByChar(c).init_y, 45.8);
+        ret *= Normal(x, KeyPos.getInitxByChar(c), 52.7);
+        ret *= Normal(y, KeyPos.getInityByChar(c), 45.8);
         return ret;
     }
 
