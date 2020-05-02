@@ -7,7 +7,7 @@ import java.util.HashMap;
 
 public class KeyPos {
     final int KEYNUM = 33;
-    public Key keys[];
+    public static Key keys[];
     final float keyboardWidth = 1080f;
     final float keyboardHeight = 680f;
     float bottomThreshold;
@@ -43,8 +43,8 @@ public class KeyPos {
     final int SPACE=30;
     final int COMMA=31;
     final int PERIOD=32;
-    final int[] allChar={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,20,21,22,23,24,25,26};
-    final int[] keyPos={10,24,22,12,2,13,14,15,7,16,17,18,26,25,8,9,0,3,11,4,6,23,1,21,5,20};
+    final static int[] allChar={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,20,21,22,23,24,25,26};
+    final static int[] keyPos={10,24,22,12,2,13,14,15,7,16,17,18,26,25,8,9,0,3,11,4,6,23,1,21,5,20};
     final String alphabet = "qwertyuiopasdfghjkl zxcvbnm       ";
 
     final int SCALING_NUM = 3;
@@ -469,6 +469,16 @@ public class KeyPos {
     public KeyPos() {
         defaultParams();
         initKeys();
+    }
+
+    public static Key getKeyByChar(char c) {
+        int index = keyPos[c-'a'];
+        return keys[index];
+    }
+
+    public Key getKeyByCharDefault(char c) {
+        int index = keyPos[c-'a'];
+        return keys[index];
     }
 
 }

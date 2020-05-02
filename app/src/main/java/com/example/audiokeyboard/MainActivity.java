@@ -31,6 +31,8 @@ public class MainActivity extends AppCompatActivity {
     final long MIN_TIME_GAP = 1000;
     final char KEY_NOT_FOUND = '*';
 
+    final long minTimeGapThreshold = 500;               // 如果大于这个时间长度说明key是确定的；
+
     int currMode;
 
     Letter currentChar;
@@ -48,7 +50,8 @@ public class MainActivity extends AppCompatActivity {
     MotionPoint endPoint =  new MotionPoint(0, 0);
 
     final int DICT_SIZE = 50000;
-    ArrayList<Word> dictEng;
+
+    Predictor predictor;
 
     void defaultParams() {
         currMode = Key.MODE_INIT;
@@ -67,10 +70,15 @@ public class MainActivity extends AppCompatActivity {
         initTts();
         defaultParams();
         keyboardView.setKeysAndRefresh(keyPos.keys);
+        initPredictor();
+        initDict();
+    }
+
+    void initPredictor() {
+        predictor = new Predictor(this.keyPos);
     }
 
     void initDict() {
-        dictEng = new ArrayList<>();
         Log.i("init", "start loading dict_eng");
         BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().openRawResource(R.raw.dict_eng)));
         String line;
@@ -79,14 +87,14 @@ public class MainActivity extends AppCompatActivity {
             while ((line = reader.readLine()) != null){
                 lineNo++;
                 String[] ss = line.split(" ");
-                dictEng.add(new Word(ss[0], Double.valueOf(ss[1])));
+                predictor.dictEng.add(new Word(ss[0], Double.valueOf(ss[1])));
                 if (lineNo == DICT_SIZE)
                     break;
             }
             reader.close();
-            Log.i("init", "read dict_eng finished " + dictEng.size());
+            Log.e("init", "read dict_eng finished " + predictor.dictEng.size());
         } catch (Exception e){
-            Log.i("init", "read dict_eng failed");
+            Log.e("init", "read dict_eng failed");
         }
     }
 
@@ -95,6 +103,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_relative);
         init();
+        debug();
     }
 
     void appendText(String s) {
@@ -117,6 +126,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void processTouchUp(float x, float y) {
         int moveType = MotionSeperator.getMotionType(startPoint, endPoint);
+        long timeGap = startPoint.getTimeBetween(endPoint);
         switch (moveType) {
             case MotionSeperator.FLING_LEFT:                    // this means backspace
                 recorder.removeLast();
@@ -135,7 +145,10 @@ public class MainActivity extends AppCompatActivity {
             case MotionSeperator.NORMAL_MOVE:
             default:
                 currentChar.setChar(keyPos.getKeyByPosition(x, y, currMode, getkey_mode));
-                recorder.add(currentChar.getChar());
+                if(timeGap > minTimeGapThreshold)               // 说明这个时候是确定的字符
+                    recorder.add(currentChar.getChar(), true);
+                else
+                    recorder.add(currentChar.getChar(), false);
                 appendText(currentChar.getChar()+"");
         }
     }
@@ -172,6 +185,11 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }
         return super.onTouchEvent(event);
+    }
+
+    public void debug() {
+        predictor.getMultiByPointAndKey(0, 0, 'q');
+        Log.e("this is a warning: ",  KeyPos.getKeyByChar('q').curr_x+" "+ KeyPos.getKeyByChar('q').curr_y);
     }
 
 }
