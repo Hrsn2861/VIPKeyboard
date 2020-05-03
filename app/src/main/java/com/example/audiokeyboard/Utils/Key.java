@@ -13,7 +13,7 @@ public class Key {
     public float curr_width;
     public float curr_height;
 
-    float tapRange = 0.5f;
+    float tapRange = 0.8f;
 
     public static final int MODE_INIT = 0;
     public static final int MODE_VIP = 1;
@@ -124,7 +124,7 @@ public class Key {
 
     float getTop_tap(int mode) {
         if(mode == MODE_INIT) return init_y - tapRange * init_height / 2f;
-        else if(mode == MODE_VIP) return init_y - tapRange * curr_height / 2f;
+        else if(mode == MODE_VIP) return curr_y - tapRange * curr_height / 2f;
         else Log.e(TAG, "getTop_tap: no mode found");
         return -1;
     }

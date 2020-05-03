@@ -59,20 +59,46 @@ public class Predictor {
         this.keyPos = keyPos;
     }
 
-    public char getMostPossibleKey(DataRecorder recorder) {
-        char ch = 'a';
-        return ch;
+    public char getMostPossibleKey(DataRecorder recorder, float x, float y) {
+        double maxP = 0;
+        char maxPChar = KeyPos.KEY_NOT_FOUND;
+        for(char c='a';c<='z';c++) {
+            double p = getPossibilityByChar(recorder, c) * getMultiByPointAndKey(x, y, c);
+            if(p > maxP) {
+                maxPChar = c;
+                maxP = p;
+            }
+        }
+        return maxPChar;
     }
 
-    public double getMultiByPointAndKey(float x, float y, char c) {
+    public double getPossibilityByChar(DataRecorder recorder, char c) {         // 计算P(pre, c)
+        double possibility = 0.0;
+        for(int i=0;i<dictEng.size();i++) {
+            String text = dictEng.get(i).getText();
+            if(text.length() <= recorder.getDataLength()) continue;              // 如果长度小于输入串则跳过
+            boolean flag = true;
+            for(int j=0;j<recorder.getDataLength();j++)
+                if(text.charAt(j) != recorder.dataSeq.get(j).getChar()) {
+                    flag = false;
+                    break;
+                }
+            if(!flag) continue;                                                 // 如果发现有不一样的则跳过
+            if(text.charAt(recorder.getDataLength()) == c)
+                possibility += dictEng.get(i).getFreq();
+        }
+        return possibility;
+    }
+
+    public double getMultiByPointAndKey(float x, float y, char c) {             // 找到位置乘子
         double ret = 1.0;
         ret *= Normal(x, KeyPos.getInitxByChar(c), 52.7);
         ret *= Normal(y, KeyPos.getInityByChar(c), 45.8);
         return ret;
     }
 
-    public ArrayList<Word> getCandidate(DataRecorder recorder) {
-        ArrayList<Word> ret = new ArrayList<>();
+    public ArrayList<String> getCandidate(DataRecorder recorder) {
+        ArrayList<String> ret = new ArrayList<>();
 
         for(int i=0;i<recorder.getDataLength();i++) {
             Letter l = recorder.getLetterByIndex(i);

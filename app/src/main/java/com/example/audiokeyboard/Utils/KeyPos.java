@@ -1,11 +1,16 @@
 package com.example.audiokeyboard.Utils;
 
+import android.util.Log;
+
 import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class KeyPos {
+
+    final String TAG = "KeyPos Tag";
+
     final int KEYNUM = 33;
     public Key keys[];
     public static float static_initx[];
@@ -49,9 +54,9 @@ public class KeyPos {
     final static int[] keyPos={10,24,22,12,2,13,14,15,7,16,17,18,26,25,8,9,0,3,11,4,6,23,1,21,5,20};
     final String alphabet = "qwertyuiopasdfghjkl zxcvbnm       ";
 
-    final int SCALING_NUM = 3;
+    public int SCALINGNUM = 3;
 
-    final char KEY_NOT_FOUND = '*';
+    final public static char KEY_NOT_FOUND = '*';
     final char shiftCh=KEY_NOT_FOUND;
     final char symbolCh=KEY_NOT_FOUND;
     final char languageCh=KEY_NOT_FOUND;
@@ -192,7 +197,7 @@ public class KeyPos {
 
     int getCharIndex(char ch) {
         if(ch >= 'a' && ch <= 'z')
-            return allChar[ch-'a'];
+            return keyPos[ch-'a'];
         else
             return -1;
     }
@@ -224,33 +229,40 @@ public class KeyPos {
             case 1:
                 left = A; right = L; break;
             case 2:
-                left = Z; right = M; break;
+                left = SHIFT; right = BACKSPACE; break;
         }
-
+        int indexInRow = -1;
+        if(index <= P) indexInRow = index;
+        else if(index <= L) indexInRow = index - A;
+        else if(index <= M) indexInRow = index - Z;
         shiftxByIndex_linear(index, left, right, dx);
-        adjustxTo(row);
+        // adjustToRow(row);
 
         return true;
     }
 
     void shiftxByIndex_linear(int index, int left, int right, float dx) {
-        int begin = Math.min(index, Q+SCALING_NUM);             // only scale the first or the last letters
-        int leftNum = begin - left + 1;
-        int end = Math.max(index, P-SCALING_NUM);
-        int rightNum = right - end + 1;
-        float leftRatio = 2f / (leftNum+1) / leftNum;
-        float rightRatio = 2f / (rightNum+1) / rightNum;
-        for(int i=left;i<=begin;i++) {
-            keys[i].curr_x = keys[i].init_x + (leftRatio*(i+1)*dx/2f);
-            keys[i].curr_width = keys[i].curr_width + (leftRatio*(i+1)*dx);
+        int begin = Math.min(index, left+SCALINGNUM);
+        int end = Math.max(index, right-SCALINGNUM);
+
+        for(int i=begin;i<=end;i++) {
+            keys[i].curr_x = keys[i].init_x+dx;
+            keys[i].curr_width = keys[i].init_width;
         }
-        for(int i=end;i<=right;i++) {
-            keys[i].curr_x = keys[i].init_x + (rightRatio*(i+1)*dx/2f);
-            keys[i].curr_width = keys[i].init_width + (rightRatio*(i+1)*dx);
+
+        float leftRatio = keys[begin].getLeft(VIP_LAYOUT) / keys[begin].getLeft(INIT_LAYOUT);
+        for(int i=left;i<begin;i++) {
+            keys[i].curr_x = keys[i].init_x * leftRatio;
+            keys[i].curr_width = keys[i].init_width * leftRatio;
+        }
+        float rightRatio = (keyboardWidth-keys[end].getRight(VIP_LAYOUT)) / (keyboardWidth-keys[end].getRight(INIT_LAYOUT));
+        for(int i=end+1;i<=right;i++) {
+            keys[i].curr_x = keyboardWidth - (keyboardWidth - keys[i].init_x) * rightRatio;
+            keys[i].curr_width = keys[i].init_width * rightRatio;
         }
     }
 
-    void adjustxTo(int row) {
+    void adjustToRow(int row) {
         int left, right;
         if(moveBodily == ADJUST_RESPECTIVELY) {
             for(int i=0;i<3;i++) {
@@ -417,6 +429,7 @@ public class KeyPos {
 
     // move Character ch to the location x and y;
     public boolean shift(char ch, float x, float y) {
+        if(ch == getKeyByPosition(x, y, VIP_LAYOUT)) return false;
         if(ch == KEY_NOT_FOUND) return false;
         int index = getCharIndex(ch);
         int qua = keys[index].containTap(x, y, INIT_LAYOUT);
@@ -465,7 +478,10 @@ public class KeyPos {
                 break;
             }
         }
-        return shiftx_linear(ch,dx)&&shifty_linear(ch,dy);
+
+        Log.e(TAG, qua+" "+dx+" "+dy);
+
+        return shiftx_linear(ch,dx)||shifty_linear(ch,dy);
     }
 
     public KeyPos() {
@@ -490,6 +506,12 @@ public class KeyPos {
 
     public static float getInityByChar(char c) {
         return static_inity[keyPos[c-'a']];
+    }
+
+    public void reset() {
+        for(int i=0;i<KEYNUM;i++) {
+            keys[i].reset();
+        }
     }
 
 }

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 public class DataRecorder {
 
-    ArrayList<Letter> dataSeq;
+    public ArrayList<Letter> dataSeq;
 
     void init() {
         this.dataSeq = new ArrayList<>();

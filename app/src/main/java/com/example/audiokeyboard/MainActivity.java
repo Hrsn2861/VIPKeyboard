@@ -136,6 +136,8 @@ public class MainActivity extends AppCompatActivity {
                 recorder.removeLast();
                 textSpeaker.speak(deleteLast()+" removed");
                 currentChar.setChar(KEY_NOT_FOUND);
+                keyPos.reset();
+                refresh();
                 break;
             case MotionSeperator.FLING_RIGHT:                   // this means word selected
                 String s = recorder.getDataAsString();
@@ -143,12 +145,15 @@ public class MainActivity extends AppCompatActivity {
                 currentChar.setChar(KEY_NOT_FOUND);
                 textSpeaker.speak(s);
                 appendText(" ");
+                keyPos.reset();
+                refresh();
                 break;
             case MotionSeperator.FLING_DOWN:
             case MotionSeperator.FLING_UP:
             case MotionSeperator.NORMAL_MOVE:
             default:
                 currentChar.setChar(keyPos.getKeyByPosition(x, y, currMode, getkey_mode));
+                if(currentChar.getChar() == KEY_NOT_FOUND) break;
                 if(timeGap > minTimeGapThreshold)               // 说明这个时候是确定的字符
                     recorder.add(currentChar.getChar(), true);
                 else
@@ -158,12 +163,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void processTouchDown(float x ,float y){
+        char mostPossible = predictor.getMostPossibleKey(recorder, x, y);
+        Log.e("----------", mostPossible+" is the most possible key");
+        if(keyPos.shift(mostPossible, x, y)) { refresh(); }
+
         this.textSpeaker.stop();
         char ch = keyPos.getKeyByPosition(x, y, currMode, getkey_mode);
-        String near = keyPos.getKeyAround(x, y, currMode, getkey_mode);
         currentChar.setChar(ch);
         textSpeaker.speak(currentChar.getChar()+"");
-        if(currentChar.getChar() != '*') { refresh(); }
     }
 
     public void processTouchMove(float x, float y) {

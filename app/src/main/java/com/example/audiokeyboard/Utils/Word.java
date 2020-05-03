@@ -20,4 +20,12 @@ public class Word implements Comparable<Word>{
         if (this.freq < o.freq) return 1;
         return 0;
     }
+
+    public String getText() {
+        return text;
+    }
+
+    public double getFreq() {
+        return freq;
+    }
 }

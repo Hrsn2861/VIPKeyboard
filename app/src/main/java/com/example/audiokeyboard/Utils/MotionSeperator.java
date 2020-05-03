@@ -4,7 +4,7 @@ import android.util.Log;
 
 public class MotionSeperator {
 
-    public static int MIN_FLING_VELOCITY = 2;
+    public static double MIN_FLING_VELOCITY = 1.5;
 
     public static final int FLING_LEFT = 1;
     public static final int FLING_RIGHT = 2;
