@@ -326,6 +326,7 @@ public class KeyPos {
 
     // performm shift in the column
     boolean shifty_linear(char ch, float dy) {
+        Log.e("//////////", dy+" this is dy");
         int index = getCharIndex(ch);
         if(index == SHIFT || index == BACKSPACE || index == SYMBOL)
             return false;
@@ -475,7 +476,10 @@ public class KeyPos {
             }
         }
 
-        return shiftx_linear(ch,dx)||shifty_linear(ch,dy);
+        boolean xChanged = shiftx_linear(ch, dx);
+        boolean yChanged = shifty_linear(ch, dy);
+
+        return xChanged || yChanged;
     }
 
     public KeyPos() {
