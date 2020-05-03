@@ -101,20 +101,6 @@ public class Key {
         return x>=getLeft(mode)&&x<=getRight(mode)&&y>=getTop(mode)&&y<=getBottom(mode);
     }
 
-    int tapPosition(int x, int y, int mode) {
-        int[][] quadrant = {{1,2,3}, {4,5,6}, {7,8,9}};
-        int row = 0;
-        int col = 0;
-        if(x < getLeft(mode)) col = 0;
-        else if(x > getRight(mode)) col = 2;
-        else col = 1;
-        if(y < getTop(mode)) row = 0;
-        else if(y > getBottom(mode)) row = 2;
-        else row = 1;
-
-        return quadrant[row][col];
-    }
-
     float getBottom_tap(int mode) {
         if(mode == MODE_INIT) return init_y + tapRange * init_height / 2f;
         else if(mode == MODE_VIP) return curr_y + tapRange * curr_height / 2f;
@@ -138,7 +124,7 @@ public class Key {
 
     float getRight_tap(int mode) {
         if(mode == MODE_INIT) return init_x + tapRange * init_width / 2f;
-        else if(mode == MODE_VIP) return curr_x + tapRange * init_width / 2f;
+        else if(mode == MODE_VIP) return curr_x + tapRange * curr_x / 2f;
         else Log.e(TAG, "getRight_tap: no mode found");
         return -1;
     }
@@ -149,6 +135,17 @@ public class Key {
         curr_width = init_width;
         curr_height = init_height;
     }
+
+    public void resetX() {
+        curr_x = init_x;
+        curr_width = init_width;
+    }
+
+    public void resetY() {
+        curr_y = init_y;
+        curr_height = init_height;
+    }
+
     /*
     1 2 3
     4 5 6

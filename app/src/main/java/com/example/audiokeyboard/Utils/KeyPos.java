@@ -24,12 +24,14 @@ public class KeyPos {
     float baseImageHeight;
     float baseImageWidth;
 
-    float minHeightRatio = 0.5f;
+    float minHeightRatio = 0.4f;                        // shift 最小的高度
 
     final float paddingTop = 1584 - keyboardHeight;     // This is the View's Height, I don't know how to get it before init;
     final float headerHeight = 210;                     // header Height
     public final float partialwindowSize = 1584;               // relative window size
     public final float wholewindowSize = 1794;                 // the whole size of the window
+
+    public final float minDistToStopShifting = 20000;           // 如果shift距离大于这个距离就不进行调整了，否则乱套了；
 
     final int Q=0;
     final int W=1;
@@ -267,7 +269,7 @@ public class KeyPos {
                 else if(i == 1) { left = A; right=L; }
                 else { left = Z; right = M; }
                 for(int j=left;j<=right;j++) {
-                    keys[j].reset();
+                    keys[j].resetX();
                 }
             }
             return;
@@ -322,61 +324,89 @@ public class KeyPos {
                 }
                 break;
         }
+        adjustSymbols(row);
+
+    }
+
+    void adjustSymbols(int row) {
+        if(moveBodily == ADJUST_RESPECTIVELY) return;
+        keys[SHIFT].curr_width = keys[Z].getLeft(VIP_LAYOUT);
+        keys[SHIFT].curr_x = keys[SHIFT].curr_width / 2;
+
+        keys[BACKSPACE].curr_width = keyboardWidth - keys[M].getRight(VIP_LAYOUT);
+        keys[BACKSPACE].curr_x = keys[M].getRight(VIP_LAYOUT) + keys[BACKSPACE].curr_width / 2f;
+
+        keys[SYMBOL].curr_width = keys[SHIFT].curr_width;
+        keys[SYMBOL].curr_x = keys[SHIFT].curr_x;
+
+        keys[LANGUAGE].curr_width = keys[X].curr_x - keys[Z].getLeft(VIP_LAYOUT);
+        keys[LANGUAGE].curr_x = keys[SYMBOL].getRight(VIP_LAYOUT) + keys[LANGUAGE].curr_width / 2F;
+
+        // PERIOD
+        keys[PERIOD].curr_width = keys[BACKSPACE].curr_width;
+        keys[PERIOD].curr_x = keys[BACKSPACE].curr_x;
+
+        // COMMA
+        keys[COMMA].curr_width = keys[M].getRight(VIP_LAYOUT) - keys[N].curr_x;
+        keys[COMMA].curr_x = keys[PERIOD].getLeft(VIP_LAYOUT) - keys[COMMA].curr_width / 2F;
+
+        // SPACE
+        keys[SPACE].curr_width = keys[COMMA].getLeft(VIP_LAYOUT) - keys[LANGUAGE].getRight(VIP_LAYOUT);
+        keys[SPACE].curr_x = keys[LANGUAGE].getRight(VIP_LAYOUT) + keys[SPACE].curr_width / 2F;
     }
 
     // performm shift in the column
     boolean shifty_linear(char ch, float dy) {
-        Log.e("//////////", dy+" this is dy");
+        Log.e("/////////", dy+" this is dy");
         int index = getCharIndex(ch);
         if(index == SHIFT || index == BACKSPACE || index == SYMBOL)
             return false;
+        if(dy == 0) return false;
         if(dy>0){// downward movement, only compress
-            if( keys[SYMBOL].init_y+dy>=bottomThreshold){                           // 超出了下界，这里面好像达不到这种情况？
+            if( keys[SYMBOL].init_y+dy>=bottomThreshold)                          // 超出了下界，这里面好像达不到这种情况？
                 return false;
-            }else{
-                if(index>=SHIFT) //the third line
-                {
-                    for(int i=Q;i<=BACKSPACE;i++){
-                        this.keys[i].curr_y=this.keys[i].init_y+dy;
-                        this.keys[i].curr_height=this.keys[i].init_height;
-                    }
-                    for(int i=SYMBOL;i<=PERIOD;i++){
-                        this.keys[i].curr_height=bottomThreshold-this.keys[SHIFT].getBottom(VIP_LAYOUT);
-                        this.keys[i].curr_y=this.keys[SHIFT].getBottom(VIP_LAYOUT)+this.keys[i].curr_height/2F;
+            if(index>=SHIFT) //the third line
+            {
+                for(int i=Q;i<=BACKSPACE;i++){
+                    this.keys[i].curr_y=this.keys[i].init_y+dy;
+                    this.keys[i].curr_height=this.keys[i].init_height;
+                }
+                for(int i=SYMBOL;i<=PERIOD;i++){
+                    this.keys[i].curr_height=bottomThreshold-this.keys[SHIFT].getBottom(VIP_LAYOUT);
+                    this.keys[i].curr_y=this.keys[SHIFT].getBottom(VIP_LAYOUT)+this.keys[i].curr_height/2F;
 
-                    }
-                }else if(index>=A)// the second line
-                {
-                    for(int i=Q;i<=L;i++) {                                             // 前两行的内容
-                        this.keys[i].curr_y = this.keys[i].init_y + dy;
-                        this.keys[i].curr_height = this.keys[i].init_height;
-                    }
-                    for(int i=SHIFT;i<=BACKSPACE;i++){
-                        this.keys[i].curr_height=(bottomThreshold-this.keys[A].getBottom(VIP_LAYOUT))/2F;
-                        this.keys[i].curr_y=this.keys[A].getBottom(VIP_LAYOUT)+this.keys[i].curr_height/2F;
-                    }
-                    for(int i=SYMBOL;i<=PERIOD;i++){
-                        this.keys[i].curr_height=this.keys[SHIFT].curr_height;
-                        this.keys[i].curr_y=this.keys[Z].getBottom(VIP_LAYOUT)+this.keys[i].curr_height/2F;
-                    }
-                }else // the first line
-                {
-                    for(int i=Q;i<=P;i++) {
-                        this.keys[i].curr_y = this.keys[i].init_y + dy;
-                        this.keys[i].curr_height = this.keys[i].init_height;
-                    }
-                    for(int i=A;i<=L;i++){
-                        this.keys[i].curr_height=(bottomThreshold-this.keys[Q].getBottom(VIP_LAYOUT))/3F;
-                        this.keys[i].curr_y=this.keys[Q].getBottom(VIP_LAYOUT)+this.keys[i].curr_height/2F;
-                    }
-                    for(int i=SHIFT;i<=BACKSPACE;i++){
-                        this.keys[i].curr_height=this.keys[A].curr_height;
-                        this.keys[i].curr_y=this.keys[A].getBottom(VIP_LAYOUT)+this.keys[i].curr_height/2F;
-                    }
-                    for(int i=SYMBOL;i<=PERIOD;i++){
-                        this.keys[i].curr_height=this.keys[SHIFT].curr_height;
-                        this.keys[i].curr_y=this.keys[SHIFT].getBottom(VIP_LAYOUT)+this.keys[i].curr_height/2F;
-                    }
+                }
+            }else if(index>=A)// the second line
+            {
+                for(int i=Q;i<=L;i++) {                                             // 前两行的内容
+                    this.keys[i].curr_y = this.keys[i].init_y + dy;
+                    this.keys[i].curr_height = this.keys[i].init_height;
+                }
+                for(int i=SHIFT;i<=BACKSPACE;i++){
+                    this.keys[i].curr_height=(bottomThreshold-this.keys[A].getBottom(VIP_LAYOUT))/2F;
+                    this.keys[i].curr_y=this.keys[A].getBottom(VIP_LAYOUT)+this.keys[i].curr_height/2F;
+                }
+                for(int i=SYMBOL;i<=PERIOD;i++){
+                    this.keys[i].curr_height=this.keys[SHIFT].curr_height;
+                    this.keys[i].curr_y=this.keys[Z].getBottom(VIP_LAYOUT)+this.keys[i].curr_height/2F;
+                }
+            }else // the first line
+            {
+                for(int i=Q;i<=P;i++) {
+                    this.keys[i].curr_y = this.keys[i].init_y + dy;
+                    this.keys[i].curr_height = this.keys[i].init_height;
+                }
+                for(int i=A;i<=L;i++){
+                    this.keys[i].curr_height=(bottomThreshold-this.keys[Q].getBottom(VIP_LAYOUT))/3F;
+                    this.keys[i].curr_y=this.keys[Q].getBottom(VIP_LAYOUT)+this.keys[i].curr_height/2F;
+                }
+                for(int i=SHIFT;i<=BACKSPACE;i++){
+                    this.keys[i].curr_height=this.keys[A].curr_height;
+                    this.keys[i].curr_y=this.keys[A].getBottom(VIP_LAYOUT)+this.keys[i].curr_height/2F;
+                }
+                for(int i=SYMBOL;i<=PERIOD;i++){
+                    this.keys[i].curr_height=this.keys[SHIFT].curr_height;
+                    this.keys[i].curr_y=this.keys[SHIFT].getBottom(VIP_LAYOUT)+this.keys[i].curr_height/2F;
                 }
             }
         }
@@ -429,6 +459,10 @@ public class KeyPos {
         if(ch == getKeyByPosition(x, y, VIP_LAYOUT)) return false;
         if(ch == KEY_NOT_FOUND) return false;
         int index = getCharIndex(ch);
+
+        Log.e("++++++", keys[index].getDist(x, y, VIP_LAYOUT)+" is the dist");
+        if(keys[index].getDist(x, y, VIP_LAYOUT) > minDistToStopShifting) return false;
+
         int qua = keys[index].containTap(x, y, INIT_LAYOUT);
 
         float dx = 0;

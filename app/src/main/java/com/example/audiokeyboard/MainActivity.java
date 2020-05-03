@@ -34,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     final double minVelocityToStopSpeaking = 0.2;
     final double maxVelocityToDetermineHover = 0.1;
     final long minTimeGapThreshold = 500;               // 如果大于这个时间长度说明key是确定的；
+    final long minMoveDistToCancelBestChar = 20;        // 如果大于这个距离就取消选中的最佳；（感觉这个机制不是很靠谱）
 
     int currMode;
 
@@ -51,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
     MotionPoint startPoint = new MotionPoint(0, 0);
     MotionPoint endPoint =  new MotionPoint(0, 0);
     MotionPoint currPoint = new MotionPoint(0, 0);
+    boolean skipUpDetect = false;
     char currMoveCharacter = KEY_NOT_FOUND;
 
     final int DICT_SIZE = 50000;
@@ -152,7 +154,9 @@ public class MainActivity extends AppCompatActivity {
             case MotionSeperator.FLING_UP:
             case MotionSeperator.NORMAL_MOVE:
             default:
-                currentChar.setChar(keyPos.getKeyByPosition(x, y, currMode, getkey_mode));
+                Log.e("::::::::::::::",startPoint.getDistance(endPoint)+"");
+                if(!skipUpDetect || startPoint.getDistance(endPoint) > minMoveDistToCancelBestChar)
+                    currentChar.setChar(keyPos.getKeyByPosition(x, y, currMode, getkey_mode));
                 if(currentChar.getChar() == KEY_NOT_FOUND) break;
                 if(timeGap > minTimeGapThreshold)               // 说明这个时候是确定的字符
                     recorder.add(currentChar.getChar(), true);
@@ -166,14 +170,16 @@ public class MainActivity extends AppCompatActivity {
         char mostPossible = predictor.getMostPossibleKey(recorder, x, y);
         Log.e("----------", mostPossible+" is the most possible character");
         if(y < keyPos.topThreshold) {
+            currentChar.setChar(KEY_NOT_FOUND);                         // 需要清空
             textSpeaker.stop();
             textSpeaker.speak("out of range");
             return;
         }
-        if(keyPos.shift(mostPossible, x, y)) { refresh(); }
+        char ch = KEY_NOT_FOUND;
+        if(keyPos.shift(mostPossible, x, y)) { ch = mostPossible; skipUpDetect = true;  refresh(); }    // 如果设置的话
+        else { ch = keyPos.getKeyByPosition(x, y, currMode, getkey_mode); }
 
         this.textSpeaker.stop();
-        char ch = keyPos.getKeyByPosition(x, y, currMode, getkey_mode);
         if(ch == KEY_NOT_FOUND) return;
         currentChar.setChar(ch);
         textSpeaker.speak(currentChar.getChar()+"");
