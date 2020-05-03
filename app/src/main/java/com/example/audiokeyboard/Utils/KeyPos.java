@@ -17,8 +17,8 @@ public class KeyPos {
     public static float static_inity[];
     final float keyboardWidth = 1080f;
     final float keyboardHeight = 680f;
-    float bottomThreshold;
-    float topThreshold;
+    public float bottomThreshold;
+    public float topThreshold;
     float screen_height_ratio = 1f;
     float screen_width_ratio = 1f;
     float baseImageHeight;
@@ -73,7 +73,7 @@ public class KeyPos {
 
     final int ADJUST_BODILY = 1;
     final int ADJUST_RESPECTIVELY = 0;
-    int moveBodily = 0;
+    int moveBodily = ADJUST_BODILY;
 
     final HashMap<Character,String> nearMapping = new HashMap<Character, String>() {
         {
@@ -231,12 +231,8 @@ public class KeyPos {
             case 2:
                 left = SHIFT; right = BACKSPACE; break;
         }
-        int indexInRow = -1;
-        if(index <= P) indexInRow = index;
-        else if(index <= L) indexInRow = index - A;
-        else if(index <= M) indexInRow = index - Z;
         shiftxByIndex_linear(index, left, right, dx);
-        // adjustToRow(row);
+        adjustToRow(row);
 
         return true;
     }
@@ -267,21 +263,21 @@ public class KeyPos {
         if(moveBodily == ADJUST_RESPECTIVELY) {
             for(int i=0;i<3;i++) {
                 if(i == row) continue;
-                if(row == 0) { left = Q; right = P; }
-                else if(row == 1) { left = A; right=L; }
+                if(i == 0) { left = Q; right = P; }
+                else if(i == 1) { left = A; right=L; }
                 else { left = Z; right = M; }
                 for(int j=left;j<=right;j++) {
-                    keys[j].curr_x = keys[j].init_x;
-                    keys[j].curr_width = keys[i].init_width;
+                    keys[j].reset();
                 }
             }
+            return;
         }
         assert moveBodily == ADJUST_BODILY;
         switch (row) {
             case 0:
                 for(int i=A;i<=L;i++) {
                     keys[i].curr_x = (keys[i-(A-Q)].curr_x+keys[i-(A-W)].curr_x)/2f;
-                    keys[i].curr_width = (keys[i-(A-Q)].curr_x-keys[i-(A-W)].curr_x);
+                    keys[i].curr_width = (keys[i-(A-W)].curr_x-keys[i-(A-Q)].curr_x);
                 }
                 for(int i=Z;i<=M;i++) {
                     keys[i].curr_x  = (keys[i-(Z-S)].curr_x);
@@ -290,9 +286,9 @@ public class KeyPos {
                 break;
             case 1:
                 keys[Q].curr_x = keys[A].curr_x / 2f;
-                keys[Q].curr_width = keys[A].curr_width;
-                keys[P].curr_x = keyboardWidth - keys[L].curr_x;
-                keys[P].curr_width = keyboardWidth - keys[L].curr_width / 2f;
+                keys[Q].curr_width = keys[A].curr_x;
+                keys[P].curr_width = keyboardWidth - keys[L].curr_x;
+                keys[P].curr_x = keyboardWidth - keys[L].curr_width / 2f;
                 // match the first line
                 for(int i=W;i<=O;i++) {
                     keys[i].curr_x = (keys[i+(A-W)].curr_x + keys[i+(S-W)].curr_x) / 2f;
@@ -306,13 +302,13 @@ public class KeyPos {
                 break;
             case 2:
                 // match the second line
-                for(int i=S;i<K;i++) {
+                for(int i=S;i<=K;i++) {
                     keys[i].curr_x = keys[i+(Z-S)].curr_x;
                     keys[i].curr_width = keys[i+(Z-S)].curr_width;
                 }
                 keys[A].curr_width = keys[S].getLeft(VIP_LAYOUT)*2f/3f;
                 keys[A].curr_x = keys[S].curr_width;
-                keys[L].curr_width = (keyboardWidth - keys[K].getRight(VIP_LAYOUT)*2f/3f);
+                keys[L].curr_width = (keyboardWidth - keys[K].getRight(VIP_LAYOUT))*2f/3f;
                 keys[L].curr_x = keys[K].getRight(VIP_LAYOUT)+this.keys[L].curr_width/2f;
 
                 // match the first line
@@ -478,8 +474,6 @@ public class KeyPos {
                 break;
             }
         }
-
-        Log.e(TAG, qua+" "+dx+" "+dy);
 
         return shiftx_linear(ch,dx)||shifty_linear(ch,dy);
     }

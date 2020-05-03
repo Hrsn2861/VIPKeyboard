@@ -58,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
     Predictor predictor;
 
     void defaultParams() {
-        currMode = Key.MODE_INIT;
+        currMode = Key.MODE_VIP;
     }
 
     void initTts() {
@@ -164,11 +164,17 @@ public class MainActivity extends AppCompatActivity {
 
     public void processTouchDown(float x ,float y){
         char mostPossible = predictor.getMostPossibleKey(recorder, x, y);
-        Log.e("----------", mostPossible+" is the most possible key");
+        Log.e("----------", mostPossible+" is the most possible character");
+        if(y < keyPos.topThreshold) {
+            textSpeaker.stop();
+            textSpeaker.speak("out of range");
+            return;
+        }
         if(keyPos.shift(mostPossible, x, y)) { refresh(); }
 
         this.textSpeaker.stop();
         char ch = keyPos.getKeyByPosition(x, y, currMode, getkey_mode);
+        if(ch == KEY_NOT_FOUND) return;
         currentChar.setChar(ch);
         textSpeaker.speak(currentChar.getChar()+"");
     }
