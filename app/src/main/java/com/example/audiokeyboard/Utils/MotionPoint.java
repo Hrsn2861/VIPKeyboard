@@ -10,16 +10,21 @@ public class MotionPoint {
         time = System.currentTimeMillis();
     }
 
-    long getTimeBetween(MotionPoint mp) {
+    public long getTimeBetween(MotionPoint mp) {
         return Math.abs(this.time - mp.time);
     }
 
     public float getDx(MotionPoint mp) { return this.x - mp.x; }
     public float getDy(MotionPoint mp) { return this.y - mp.y; }
 
+    public float getX() { return this.x; }
+    public float getY() { return this.y; }
+
     public double getDistance(MotionPoint mp) {
         return Math.sqrt(getDx(mp)*getDx(mp)+getDy(mp)*getDy(mp));
     }
+
+    public long getTime() { return this.time; }
 
     public void set(float x, float y) {
         this.x = x;

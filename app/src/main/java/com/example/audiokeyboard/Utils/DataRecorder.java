@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 public class DataRecorder {
 
-    ArrayList<Letter> dataSeq;
+    public ArrayList<Letter> dataSeq;
 
     void init() {
         this.dataSeq = new ArrayList<>();
@@ -19,6 +19,7 @@ public class DataRecorder {
     public void add(Letter l) { if(l.getChar()!=KEY_NOT_FOUNT) this.dataSeq.add(l); }
     public void add(char ch) { this.add(new Letter(ch)); }
     public void add(char ch, long time) { this.add(new Letter(ch, time)); }
+    public void add(char ch, boolean isCorrect) { this.add(new Letter(ch, isCorrect)); }
 
     public void clear() { this.dataSeq.clear(); }
     public Letter removeLast() {
@@ -34,5 +35,8 @@ public class DataRecorder {
         return ret;
     }
 
+    public int getDataLength() { return dataSeq.size(); }
+
+    public Letter getLetterByIndex(int index) { return this.dataSeq.get(index); }
 
 }

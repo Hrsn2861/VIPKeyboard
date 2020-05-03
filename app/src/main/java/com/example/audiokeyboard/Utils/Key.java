@@ -13,7 +13,7 @@ public class Key {
     public float curr_width;
     public float curr_height;
 
-    float tapRange = 0.5f;
+    float tapRange = 0.8f;
 
     public static final int MODE_INIT = 0;
     public static final int MODE_VIP = 1;
@@ -124,7 +124,7 @@ public class Key {
 
     float getTop_tap(int mode) {
         if(mode == MODE_INIT) return init_y - tapRange * init_height / 2f;
-        else if(mode == MODE_VIP) return init_y - tapRange * curr_height / 2f;
+        else if(mode == MODE_VIP) return curr_y - tapRange * curr_height / 2f;
         else Log.e(TAG, "getTop_tap: no mode found");
         return -1;
     }
@@ -148,6 +148,23 @@ public class Key {
         curr_y = init_y;
         curr_width = init_width;
         curr_height = init_height;
+    }
+    /*
+    1 2 3
+    4 5 6
+    7 8 9
+     */
+    public int containTap(float x, float y, int mode) {
+        int[][] quadrant={{1,2,3},{4,5,6},{7,8,9}};
+        int row=0;
+        int col=0;
+        if(x<getLeft_tap(mode)) col=0;
+        else if(x>getRight_tap(mode)) col=2;
+        else col=1;
+        if(y<getTop_tap(mode)) row=0;
+        else if(y>getBottom_tap(mode)) row=2;
+        else row=1;
+        return quadrant[row][col];
     }
 
     @Override
