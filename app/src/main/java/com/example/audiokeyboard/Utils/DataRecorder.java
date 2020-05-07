@@ -35,6 +35,10 @@ public class DataRecorder {
         return ret;
     }
 
+    public Letter letterAt(int index) {
+        return dataSeq.get(index);
+    }
+
     public int getDataLength() { return dataSeq.size(); }
 
     public Letter getLetterByIndex(int index) { return this.dataSeq.get(index); }

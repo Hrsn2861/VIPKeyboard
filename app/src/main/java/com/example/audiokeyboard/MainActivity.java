@@ -184,7 +184,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void processTouchDown(float x ,float y){
-        char mostPossible = predictor.getMostPossibleKey(recorder, x, y);
+        char mostPossible = predictor.getVIPMostPossibleKey(recorder, x, y);
         Log.e("----------", mostPossible+" is the most possible character");
         if(y < keyPos.topThreshold) {
             currentChar.setChar(KEY_NOT_FOUND);                         // 需要清空

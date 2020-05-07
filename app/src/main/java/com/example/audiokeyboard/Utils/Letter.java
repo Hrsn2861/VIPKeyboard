@@ -65,6 +65,8 @@ public class Letter {
 
     public void setCorrect(boolean c) { this.isCorrect = c; }
 
+    public boolean isCorrect() { return this.isCorrect; }
+
     boolean isCorrect;
 
 }

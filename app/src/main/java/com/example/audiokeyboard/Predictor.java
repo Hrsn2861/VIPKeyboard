@@ -61,6 +61,43 @@ public class Predictor {
         this.keyPos = keyPos;
     }
 
+    public char getVIPMostPossibleKey(DataRecorder recorder, float x, float y) {
+        double maxP = 0;
+        char maxPChar = KeyPos.KEY_NOT_FOUND;
+        for(char c='a';c<='z';c++) {
+            double p = getVIPPossiblilityByChar(recorder, c) * getMultiByPointAndKey(x, y, c);
+            if(p > maxP) {
+                maxPChar = c;
+                maxP = p;
+            }
+        }
+        return maxPChar;
+    }
+
+    public double getVIPPossiblilityByChar(DataRecorder recorder, char c) {
+        double possibility = 0.0;
+        String data = recorder.getDataAsString();
+        for(int i=0;i<dictEng.size();i++) {
+            String text = dictEng.get(i).getText();
+            if(text.length() <= recorder.getDataLength()) continue;
+            if(text.charAt(recorder.getDataLength()) != c) continue;
+            boolean flag = true;
+            double buf = 1.0;
+            for(int j=0;j<recorder.getDataLength();j++) {
+                if(recorder.letterAt(j).isCorrect()) {
+                    if(text.charAt(j) != data.charAt(j)) {
+                        flag = false;
+                        break;
+                    }
+                }
+                buf *= calDiffChar(text.charAt(j), data.charAt(j));
+            }
+            if(!flag) continue;
+            possibility += (buf * dictEng.get(i).getFreq());
+        }
+        return possibility;
+    }
+
     public char getMostPossibleKey(DataRecorder recorder, float x, float y) {
         double maxP = 0;
         char maxPChar = KeyPos.KEY_NOT_FOUND;
@@ -130,10 +167,19 @@ public class Predictor {
         for(int i=0;i<dictEng.size();i++) {
             Word bufWord = new Word(dictEng.get(i));
             if(bufWord.getText().length() < data.length()) continue;
+            boolean flag = true;
             for(int j=0;j<data.length();j++) {
-                bufWord.freq *= calDiffChar(bufWord.getText().charAt(j), data.charAt(j));
+                if(recorder.letterAt(j).isCorrect()) {                          // 如果是确定的字符，直接判断是否相等
+                    if(bufWord.getText().charAt(j) != data.charAt(j)) {
+                        flag = false;
+                        break;
+                    }
+                }
+                else {                                                          // 如果字符不确定，需要计算
+                    bufWord.freq *= calDiffChar(bufWord.getText().charAt(j), data.charAt(j));
+                }
             }
-            ret.add(bufWord);
+            if(flag) ret.add(bufWord);
         }
 
         Collections.sort(ret);
