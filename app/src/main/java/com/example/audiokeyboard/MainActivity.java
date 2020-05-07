@@ -47,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
     // all the text input, send to TextView
     String inputText = "";
     TextView textView;
+    TextView candidateView;
+    ArrayList<Word> candidates;
 
     // record the edge pointer moved along
     MotionPoint startPoint = new MotionPoint(0, 0);
@@ -71,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
         keyPos = new KeyPos();
         keyboardView = (KeyboardView) (findViewById(R.id.keyboard));
         textView = (TextView) (findViewById(R.id.mytext));
+        candidateView = (TextView) (findViewById(R.id.candidateView));
         recorder = new DataRecorder();
         currentChar = new Letter('*');
         initTts();
@@ -129,6 +132,17 @@ public class MainActivity extends AppCompatActivity {
     void refresh() {
         this.keyboardView.setKeysAndRefresh(keyPos.keys);
     }
+    void refreshCandidate(int start, int length) {
+        String s = "";
+        // this.candidates = predictor.getCandidate(recorder);
+        this.candidates = predictor.getVIPCandidate(recorder, currPoint.getX(), currPoint.getY());
+        int end = Math.min(start+length, candidates.size());
+        for(int i=start;i<end;i++) {
+            s += candidates.get(i).getText() + "\n";
+        }
+        candidateView.setText(s);
+    }
+    void refreshCandidate(int start) { refreshCandidate(start, 5); }
 
     public void processTouchUp(float x, float y) {
         int moveType = MotionSeperator.getMotionType(startPoint, endPoint);
@@ -140,6 +154,7 @@ public class MainActivity extends AppCompatActivity {
                 currentChar.setChar(KEY_NOT_FOUND);
                 keyPos.reset();
                 refresh();
+                refreshCandidate(0);
                 break;
             case MotionSeperator.FLING_RIGHT:                   // this means word selected
                 String s = recorder.getDataAsString();
@@ -149,13 +164,13 @@ public class MainActivity extends AppCompatActivity {
                 appendText(" ");
                 keyPos.reset();
                 refresh();
+                refreshCandidate(0);
                 break;
             case MotionSeperator.FLING_DOWN:
             case MotionSeperator.FLING_UP:
             case MotionSeperator.NORMAL_MOVE:
             default:
-                Log.e("::::::::::::::",startPoint.getDistance(endPoint)+"");
-                if(!skipUpDetect || startPoint.getDistance(endPoint) > minMoveDistToCancelBestChar)
+                if(!skipUpDetect || startPoint.getDistance(endPoint) > minMoveDistToCancelBestChar)                         // 如果这里面不要跳过或者移动距离超了才会进行更新currentchar，否则会直接利用touchdown时候的字符；
                     currentChar.setChar(keyPos.getKeyByPosition(x, y, currMode, getkey_mode));
                 if(currentChar.getChar() == KEY_NOT_FOUND) break;
                 if(timeGap > minTimeGapThreshold)               // 说明这个时候是确定的字符
@@ -163,6 +178,8 @@ public class MainActivity extends AppCompatActivity {
                 else
                     recorder.add(currentChar.getChar(), false);
                 appendText(currentChar.getChar()+"");
+                refreshCandidate(0);
+                break;
         }
     }
 

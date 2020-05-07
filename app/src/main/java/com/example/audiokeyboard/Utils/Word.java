@@ -2,7 +2,7 @@ package com.example.audiokeyboard.Utils;
 
 public class Word implements Comparable<Word>{
     String text, alias;
-    double freq;
+    public double freq;
     public Word(String text, double freq){
         this.text = this.alias = text;
         this.freq = freq;

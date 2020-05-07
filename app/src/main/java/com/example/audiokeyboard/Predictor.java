@@ -8,7 +8,9 @@ import com.example.audiokeyboard.Utils.KeyPos;
 import com.example.audiokeyboard.Utils.Letter;
 import com.example.audiokeyboard.Utils.Word;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class Predictor {
     double predictRange = 0.5;
@@ -97,13 +99,44 @@ public class Predictor {
         return ret;
     }
 
-    public ArrayList<String> getCandidate(DataRecorder recorder) {
-        ArrayList<String> ret = new ArrayList<>();
+    public ArrayList<Word> getCandidate(DataRecorder recorder) {
+        ArrayList<Word> ret = new ArrayList<>();
 
-        for(int i=0;i<recorder.getDataLength();i++) {
-            Letter l = recorder.getLetterByIndex(i);
+        for(int i=0;i<dictEng.size();i++) {
+            Word bufWord = dictEng.get(i);
+            String data = recorder.getDataAsString();
+            if(bufWord.getText().length() <= data.length()) continue;
+            boolean flag = true;
+            for(int j=0;j<recorder.getDataLength();j++) {
+                if(data.charAt(j) != bufWord.getText().charAt(j)) { flag = false; break; }
+            }
+            if(flag) ret.add(bufWord);
         }
 
+        Collections.sort(ret);
+        return ret;
+    }
+
+    double calDiffChar(char target, char curr) {
+        double ret = 1.0;
+        ret *= Normal(KeyPos.getInitxByChar(target), KeyPos.getInitxByChar(curr), 52.7);
+        ret *= Normal(KeyPos.getInityByChar(target), KeyPos.getInityByChar(curr), 45.8);
+        return ret;
+    }
+
+    public ArrayList<Word> getVIPCandidate(DataRecorder recorder, float x, float y) {
+        ArrayList<Word> ret = new ArrayList<>();
+        String data = recorder.getDataAsString();
+        for(int i=0;i<dictEng.size();i++) {
+            Word bufWord = new Word(dictEng.get(i));
+            if(bufWord.getText().length() < data.length()) continue;
+            for(int j=0;j<data.length();j++) {
+                bufWord.freq *= calDiffChar(bufWord.getText().charAt(j), data.charAt(j));
+            }
+            ret.add(bufWord);
+        }
+
+        Collections.sort(ret);
         return ret;
     }
 

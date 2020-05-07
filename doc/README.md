@@ -40,3 +40,11 @@ final float partialwindowSize = 1584；              // 对应的是 2
 final float wholewindowSize = 1794；                // 对应的是 1
 
 <img src=".\assets\params.PNG" style="zoom:25%;" />
+
+
+$$
+\frac{1}{\sqrt{2 \pi}\sigma} \cdot e^{-\frac{(x-\mu)^2}{2\sigma^2}} \\
+x = 当前点击的位置（x坐标或者y坐标） \\
+\mu = 每一个按键的初始位置（x坐标或者y坐标） \\
+\sigma = 52.7 或者45.8
+$$

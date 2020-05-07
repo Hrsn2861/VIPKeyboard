@@ -3,17 +3,24 @@ package com.example.audiokeyboard.Utils;
 public class Letter {
     char ch;
     long timeStamp;
+
+    MotionPoint mPoint;
+
     public Letter(char ch) {
+        this.mPoint = new MotionPoint(0, 0);
         this.ch = ch;
         timeStamp = System.currentTimeMillis();
+        this.isCorrect = true;
     }
     public Letter(char ch, long t) {
+        this.mPoint = new MotionPoint(0, 0);
         this.ch = ch;
         this.timeStamp = t;
         this.isCorrect = true;
     }
 
     public Letter(char ch, boolean isCorrect) {
+        this.mPoint = new MotionPoint(0, 0);
         this.ch = ch;
         this.timeStamp = System.currentTimeMillis();
         this.isCorrect = isCorrect;
@@ -23,6 +30,28 @@ public class Letter {
         this.ch = ch;
         this.timeStamp = System.currentTimeMillis();
         this.isCorrect = true;
+    }
+
+    public void setTouchPoint(float x, float y) {
+        this.mPoint.set(x, y);
+    }
+
+    public Letter(char ch, float x, float y) {
+        mPoint = new MotionPoint(x, y);
+        this.ch = ch;
+        this.timeStamp = System.currentTimeMillis();
+        this.isCorrect = true;
+    }
+
+    public Letter(char ch, boolean isCorrect, float x, float y) {
+        mPoint = new MotionPoint(x, y);
+        this.ch = ch;
+        this.isCorrect = isCorrect;
+        this.timeStamp = System.currentTimeMillis();
+    }
+
+    public MotionPoint getTouchPoint() {
+        return mPoint;
     }
 
     public char getChar() { return ch; }
