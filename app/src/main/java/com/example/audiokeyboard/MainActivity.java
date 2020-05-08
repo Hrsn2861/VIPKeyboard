@@ -182,7 +182,6 @@ public class MainActivity extends AppCompatActivity {
             case MotionSeperator.FLING_UP:
                 textSpeaker.stop();
                 currCandidateIndex = Math.min(currCandidateIndex+1, this.candidates.size()-1);
-                Log.e("----------", currCandidateIndex+" "+candidates.size());
                 currCandidate = this.candidates.get(currCandidateIndex).getText();
                 textSpeaker.speak(currCandidate);
                 refreshCurrCandidate();
@@ -190,7 +189,6 @@ public class MainActivity extends AppCompatActivity {
             case MotionSeperator.FLING_DOWN:
                 textSpeaker.stop();
                 currCandidateIndex = Math.max(currCandidateIndex-1, 0);
-                Log.e("---------", currCandidateIndex+"");
                 currCandidate = this.candidates.get(currCandidateIndex).getText();
                 textSpeaker.speak(currCandidate);
                 refreshCurrCandidate();
@@ -199,7 +197,6 @@ public class MainActivity extends AppCompatActivity {
             default:
                 currCandidateIndex = -1;
                 currCandidate = "";
-                Log.e("+++++++", "candidate emptied here");
                 if(!skipUpDetect || startPoint.getDistance(endPoint) > minMoveDistToCancelBestChar)                         // 如果这里面不要跳过或者移动距离超了才会进行更新currentchar，否则会直接利用touchdown时候的字符；
                     currentChar.setChar(keyPos.getKeyByPosition(x, y, currMode, getkey_mode));
                 if(currentChar.getChar() == KEY_NOT_FOUND) break;

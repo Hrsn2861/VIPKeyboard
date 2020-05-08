@@ -36,9 +36,8 @@
 
     <TextView
         android:id="@+id/currCandidate"
-        android:paddingTop="100dp"
+        android:paddingTop="120dp"
         android:paddingLeft="200dp"
-        android:textSize="25dp"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
     </TextView>
