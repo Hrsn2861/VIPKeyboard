@@ -29,7 +29,7 @@ public class MotionSeperator {
         if(Math.abs(dx) > Math.abs(dy))
             return dx > 0 ? FLING_RIGHT : FLING_LEFT;
         else
-            return dy > 0 ? FLING_UP : FLING_DOWN;
+            return dy > 0 ? FLING_DOWN : FLING_UP;
     }
 
 }

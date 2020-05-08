@@ -48,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     String inputText = "";
     TextView textView;
     TextView candidateView;
+    TextView currCandidateView;
     ArrayList<Word> candidates;
 
     // record the edge pointer moved along
@@ -58,6 +59,8 @@ public class MainActivity extends AppCompatActivity {
     char currMoveCharacter = KEY_NOT_FOUND;
 
     final int DICT_SIZE = 50000;
+    int currCandidateIndex = 0;
+    String currCandidate;
 
     Predictor predictor;
 
@@ -74,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
         keyboardView = (KeyboardView) (findViewById(R.id.keyboard));
         textView = (TextView) (findViewById(R.id.mytext));
         candidateView = (TextView) (findViewById(R.id.candidateView));
+        currCandidateView = (TextView) (findViewById(R.id.currCandidate));
         recorder = new DataRecorder();
         currentChar = new Letter('*');
         initTts();
@@ -138,11 +142,14 @@ public class MainActivity extends AppCompatActivity {
         this.candidates = predictor.getVIPCandidate(recorder, currPoint.getX(), currPoint.getY());
         int end = Math.min(start+length, candidates.size());
         for(int i=start;i<end;i++) {
-            s += candidates.get(i).getText() + "\n";
+            s = s.concat(candidates.get(i).getText() + "\n");
         }
         candidateView.setText(s);
     }
     void refreshCandidate(int start) { refreshCandidate(start, 5); }
+    void refreshCurrCandidate() {
+        currCandidateView.setText(currCandidate);
+    }
 
     public void processTouchUp(float x, float y) {
         int moveType = MotionSeperator.getMotionType(startPoint, endPoint);
@@ -158,18 +165,41 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case MotionSeperator.FLING_RIGHT:                   // this means word selected
                 String s = recorder.getDataAsString();
+                textSpeaker.stop();
                 recorder.clear();
                 currentChar.setChar(KEY_NOT_FOUND);
+                if(currCandidateIndex != -1) {
+                    for(int i=0;i<s.length();i++) deleteLast();
+                    s = currCandidate;
+                    appendText(s);
+                }
                 textSpeaker.speak(s);
                 appendText(" ");
                 keyPos.reset();
                 refresh();
                 refreshCandidate(0);
                 break;
-            case MotionSeperator.FLING_DOWN:
             case MotionSeperator.FLING_UP:
+                textSpeaker.stop();
+                currCandidateIndex = Math.min(currCandidateIndex+1, this.candidates.size()-1);
+                Log.e("----------", currCandidateIndex+" "+candidates.size());
+                currCandidate = this.candidates.get(currCandidateIndex).getText();
+                textSpeaker.speak(currCandidate);
+                refreshCurrCandidate();
+                break;
+            case MotionSeperator.FLING_DOWN:
+                textSpeaker.stop();
+                currCandidateIndex = Math.max(currCandidateIndex-1, 0);
+                Log.e("---------", currCandidateIndex+"");
+                currCandidate = this.candidates.get(currCandidateIndex).getText();
+                textSpeaker.speak(currCandidate);
+                refreshCurrCandidate();
+                break;
             case MotionSeperator.NORMAL_MOVE:
             default:
+                currCandidateIndex = -1;
+                currCandidate = "";
+                Log.e("+++++++", "candidate emptied here");
                 if(!skipUpDetect || startPoint.getDistance(endPoint) > minMoveDistToCancelBestChar)                         // 如果这里面不要跳过或者移动距离超了才会进行更新currentchar，否则会直接利用touchdown时候的字符；
                     currentChar.setChar(keyPos.getKeyByPosition(x, y, currMode, getkey_mode));
                 if(currentChar.getChar() == KEY_NOT_FOUND) break;
@@ -179,13 +209,14 @@ public class MainActivity extends AppCompatActivity {
                     recorder.add(currentChar.getChar(), false);
                 appendText(currentChar.getChar()+"");
                 refreshCandidate(0);
+                refreshCurrCandidate();
                 break;
         }
     }
 
     public void processTouchDown(float x ,float y){
         char mostPossible = predictor.getVIPMostPossibleKey(recorder, x, y);
-        Log.e("----------", mostPossible+" is the most possible character");
+        // Log.e("----------", mostPossible+" is the most possible character");
         if(y < keyPos.topThreshold) {
             currentChar.setChar(KEY_NOT_FOUND);                         // 需要清空
             textSpeaker.stop();
