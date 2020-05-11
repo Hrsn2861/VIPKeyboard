@@ -2,10 +2,14 @@ package com.example.audiokeyboard;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.ActionBar;
+import android.content.res.Resources;
 import android.graphics.PointF;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.Window;
 import android.widget.TextView;
 
 import com.example.audiokeyboard.Utils.DataRecorder;
@@ -39,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
     int currMode;
 
     final float voiceSpeed = 2f;
-    final long maxWaitingTimeToSpeakCandidate = 500;
+    final long maxWaitingTimeToSpeakCandidate = 800;
     boolean speakCandidate = true;
 
     Letter currentChar;
@@ -78,7 +82,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void init() {
-        keyPos = new KeyPos();
+        int height = this.getWindowManager().getDefaultDisplay().getHeight();
+        keyPos = new KeyPos(1589, height);
         keyboardView = (KeyboardView) (findViewById(R.id.keyboard));
         textView = (TextView) (findViewById(R.id.mytext));
         candidateView = (TextView) (findViewById(R.id.candidateView));
@@ -123,6 +128,11 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main_relative);
         init();
         debug();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
     }
 
     void appendText(String s) {
@@ -258,12 +268,14 @@ public class MainActivity extends AppCompatActivity {
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
         float y = event.getY()-keyPos.wholewindowSize+keyPos.partialwindowSize;
+        // float y = event.getY();
         if(event.getPointerCount() == 2) {
-            Log.e("double activity", "this is a double touch event"+" "+event.getActionIndex());
+            Log.e("double activity", "this is a double touch event"+" "+event.getActionIndex()+" "+event.getY(event.getActionIndex()));
             return super.onTouchEvent(event);
         }
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
+            // case MotionEvent.ACTION_POINTER_DOWN:
                 startPoint.set(x, y);
                 processTouchDown(x, y);
                 break;
@@ -271,7 +283,7 @@ public class MainActivity extends AppCompatActivity {
                 processTouchMove(x, y);
                 break;
             case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_POINTER_UP:
+            // case MotionEvent.ACTION_POINTER_UP:
                 endPoint.set(x, y);
                 processTouchUp(x, y);
                 break;
@@ -280,7 +292,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void debug() {
-
+        Rect frame = new Rect();
+        getWindow().getDecorView().getWindowVisibleDisplayFrame(frame);
     }
 
 }

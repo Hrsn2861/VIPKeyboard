@@ -26,10 +26,10 @@ public class KeyPos {
 
     float minHeightRatio = 0.4f;                        // shift 最小的高度
 
-    final float paddingTop = 1584 - keyboardHeight;     // This is the View's Height, I don't know how to get it before init;
+    // final float paddingTop = 1589 - keyboardHeight;     // This is the View's Height, I don't know how to get it before init;
     final float headerHeight = 210;                     // header Height
-    public final float partialwindowSize = 1584;               // relative window size
-    public final float wholewindowSize = 1794;                 // the whole size of the window
+    public float partialwindowSize = 1589;               // relative window size
+    public float wholewindowSize = 1794;                 // the whole size of the window
 
     public final float minDistToStopShifting = 20000;           // 如果shift距离大于这个距离就不进行调整了，否则乱套了；
 
@@ -153,7 +153,7 @@ public class KeyPos {
         this.keys[SPACE].init_y=this.keys[SYMBOL].init_y;
 
         for(int i=0;i<KEYNUM;i++) {
-            keys[i].init_y += paddingTop;
+            keys[i].init_y += (partialwindowSize - keyboardHeight);
             keys[i].ch = alphabet.charAt(i);
             keys[i].reset();
         }
@@ -165,8 +165,8 @@ public class KeyPos {
         screen_width_ratio = keyboardWidth / 1440f;
         baseImageHeight = keyboardHeight;
         baseImageWidth = keyboardWidth;
-        topThreshold = 0 * screen_height_ratio + paddingTop;
-        bottomThreshold = 907 * screen_height_ratio + paddingTop;
+        topThreshold = 0 * screen_height_ratio + (partialwindowSize - keyboardHeight);
+        bottomThreshold = 907 * screen_height_ratio + (partialwindowSize - keyboardHeight);
     }
 
     public char getKeyByPosition(float x, float y, int mode, int getkey_mode) {
@@ -515,7 +515,9 @@ public class KeyPos {
         return xChanged || yChanged;
     }
 
-    public KeyPos() {
+    public KeyPos(int partialwindowSize, int wholewindowSize) {
+        this.partialwindowSize = partialwindowSize;
+        this.wholewindowSize = wholewindowSize;
         defaultParams();
         initKeys();
         initStatic();
