@@ -12,7 +12,7 @@ public class TextSpeaker implements TextToSpeech.OnInitListener{
     final String TAG = "TextSpeaker";
 
     TextToSpeech tts;
-    public float voiceSpeed = 1.0f;
+    public float voiceSpeed = 5f;
 
     public TextSpeaker(Context context) {
         init(context);
@@ -22,6 +22,11 @@ public class TextSpeaker implements TextToSpeech.OnInitListener{
         tts = new TextToSpeech(context, this);
         tts.setSpeechRate(voiceSpeed);
         tts.setPitch(1.0f);
+    }
+
+    public void setVoiceSpeed(float voiceSpeed) {
+        this.voiceSpeed = voiceSpeed;
+        this.tts.setSpeechRate(voiceSpeed);
     }
 
     @Override

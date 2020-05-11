@@ -38,6 +38,10 @@ public class MainActivity extends AppCompatActivity {
 
     int currMode;
 
+    final float voiceSpeed = 2f;
+    final long maxWaitingTimeToSpeakCandidate = 500;
+    boolean speakCandidate = true;
+
     Letter currentChar;
     KeyboardView keyboardView;
     TextSpeaker textSpeaker;
@@ -70,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
 
     void initTts() {
         textSpeaker = new TextSpeaker(MainActivity.this);
+        textSpeaker.setVoiceSpeed(voiceSpeed);
     }
 
     void init() {
@@ -85,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
         keyboardView.setKeysAndRefresh(keyPos.keys);
         initPredictor();
         initDict();
+        this.candidates = new ArrayList<>();
     }
 
     void initPredictor() {
@@ -155,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
         int moveType = MotionSeperator.getMotionType(startPoint, endPoint);
         long timeGap = startPoint.getTimeBetween(endPoint);
         switch (moveType) {
-            case MotionSeperator.FLING_LEFT:                    // this means backspace
+            case MotionSeperator.FLING_DOWN:                    // this means backspace
                 recorder.removeLast();
                 textSpeaker.speak(deleteLast()+" removed");
                 currentChar.setChar(KEY_NOT_FOUND);
@@ -163,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
                 refresh();
                 refreshCandidate(0);
                 break;
-            case MotionSeperator.FLING_RIGHT:                   // this means word selected
+            case MotionSeperator.FLING_UP:                   // this means word selected
                 String s = recorder.getDataAsString();
                 textSpeaker.stop();
                 recorder.clear();
@@ -179,17 +185,27 @@ public class MainActivity extends AppCompatActivity {
                 refresh();
                 refreshCandidate(0);
                 break;
-            case MotionSeperator.FLING_UP:
+            case MotionSeperator.FLING_RIGHT:
                 textSpeaker.stop();
                 currCandidateIndex = Math.min(currCandidateIndex+1, this.candidates.size()-1);
-                currCandidate = this.candidates.get(currCandidateIndex).getText();
+                if(this.candidates.isEmpty()) {
+                    currCandidate = "no candidate";
+                }
+                else {
+                    currCandidate = this.candidates.get(currCandidateIndex).getText();
+                }
                 textSpeaker.speak(currCandidate);
                 refreshCurrCandidate();
                 break;
-            case MotionSeperator.FLING_DOWN:
+            case MotionSeperator.FLING_LEFT:
                 textSpeaker.stop();
-                currCandidateIndex = Math.max(currCandidateIndex-1, 0);
-                currCandidate = this.candidates.get(currCandidateIndex).getText();
+                currCandidateIndex = currCandidateIndex == 0 ? -1 : Math.max(currCandidateIndex-1, 0);
+                if(candidates.isEmpty()) {
+                    currCandidate = "no candidate";
+                }
+                else {
+                    currCandidate = currCandidateIndex == -1 ? "" : this.candidates.get(currCandidateIndex).getText();
+                }
                 textSpeaker.speak(currCandidate);
                 refreshCurrCandidate();
                 break;
@@ -207,13 +223,14 @@ public class MainActivity extends AppCompatActivity {
                 appendText(currentChar.getChar()+"");
                 refreshCandidate(0);
                 refreshCurrCandidate();
+                if(!candidates.isEmpty() && speakCandidate && timeGap > maxWaitingTimeToSpeakCandidate) textSpeaker.speak(candidates.get(0).getText());
                 break;
         }
     }
 
     public void processTouchDown(float x ,float y){
+        textSpeaker.stop();
         char mostPossible = predictor.getVIPMostPossibleKey(recorder, x, y);
-        // Log.e("----------", mostPossible+" is the most possible character");
         if(y < keyPos.topThreshold) {
             currentChar.setChar(KEY_NOT_FOUND);                         // 需要清空
             textSpeaker.stop();
@@ -241,7 +258,10 @@ public class MainActivity extends AppCompatActivity {
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
         float y = event.getY()-keyPos.wholewindowSize+keyPos.partialwindowSize;
-
+        if(event.getPointerCount() == 2) {
+            Log.e("double activity", "this is a double touch event"+" "+event.getActionIndex());
+            return super.onTouchEvent(event);
+        }
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
                 startPoint.set(x, y);
