@@ -60,6 +60,9 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<Word> candidates;
 
     // record the edge pointer moved along
+    boolean isTowFingerMotion = false;
+    MotionPoint secondStartPoint = new MotionPoint(0, 0);
+    MotionPoint secondEndPoint = new MotionPoint(0, 0);
     MotionPoint startPoint = new MotionPoint(0, 0);
     MotionPoint endPoint =  new MotionPoint(0, 0);
     MotionPoint currPoint = new MotionPoint(0, 0);
@@ -139,6 +142,10 @@ public class MainActivity extends AppCompatActivity {
         inputText = inputText+s;
         this.textView.setText(inputText);
     }
+    void clearText() {
+        inputText = "";
+        this.textView.setText(inputText);
+    }
     String deleteLast() {
         char ch = ' ';
         if(!inputText.isEmpty()) {
@@ -168,6 +175,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void processTouchUp(float x, float y) {
+        if(isTowFingerMotion) return;
         int moveType = MotionSeperator.getMotionType(startPoint, endPoint);
         long timeGap = startPoint.getTimeBetween(endPoint);
         switch (moveType) {
@@ -265,17 +273,32 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void processDoubleTouchUp(float x, float y) {
+        int motionType = MotionSeperator.getMotionType(startPoint, secondStartPoint, endPoint, secondEndPoint);
+        switch(motionType) {
+            case MotionSeperator.DOUBLE_FLING_DOWN:
+                Log.e("+++++++++++", "this is a double fling down");
+                recorder.clear();
+                clearText();
+                currentChar.setChar(KEY_NOT_FOUND);
+                textSpeaker.speak("clear");
+                keyPos.reset();
+                refresh();
+                refreshCurrCandidate();
+                break;
+            default:
+                Log.e("++++++++++", "NULL MOVE");
+        }
+    }
+
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
         float y = event.getY()-keyPos.wholewindowSize+keyPos.partialwindowSize;
         // float y = event.getY();
-        if(event.getPointerCount() == 2) {
-            Log.e("double activity", "this is a double touch event"+" "+event.getActionIndex()+" "+event.getY(event.getActionIndex()));
-            return super.onTouchEvent(event);
-        }
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
             // case MotionEvent.ACTION_POINTER_DOWN:
+                isTowFingerMotion = false;
                 startPoint.set(x, y);
                 processTouchDown(x, y);
                 break;
@@ -287,6 +310,13 @@ public class MainActivity extends AppCompatActivity {
                 endPoint.set(x, y);
                 processTouchUp(x, y);
                 break;
+            case MotionEvent.ACTION_POINTER_DOWN:
+                secondStartPoint.set(x, y);
+                isTowFingerMotion = true;
+                break;
+            case MotionEvent.ACTION_POINTER_UP:
+                secondEndPoint.set(x, y);
+                processDoubleTouchUp(x, y);
         }
         return super.onTouchEvent(event);
     }
