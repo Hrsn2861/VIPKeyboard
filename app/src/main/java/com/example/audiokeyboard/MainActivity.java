@@ -6,10 +6,13 @@ import android.app.ActionBar;
 import android.content.res.Resources;
 import android.graphics.PointF;
 import android.graphics.Rect;
+import android.media.Image;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.ViewTreeObserver;
 import android.view.Window;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.audiokeyboard.Utils.DataRecorder;
@@ -86,7 +89,8 @@ public class MainActivity extends AppCompatActivity {
 
     void init() {
         int height = this.getWindowManager().getDefaultDisplay().getHeight();
-        keyPos = new KeyPos(1589, height);
+        Log.e("+++++++++", ""+height);
+        keyPos = new KeyPos(0, height);
         keyboardView = (KeyboardView) (findViewById(R.id.keyboard));
         textView = (TextView) (findViewById(R.id.mytext));
         candidateView = (TextView) (findViewById(R.id.candidateView));
@@ -294,6 +298,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
         float y = event.getY()-keyPos.wholewindowSize+keyPos.partialwindowSize;
+        Log.e("this is the x and y", x+" "+y);
         // float y = event.getY();
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
@@ -322,8 +327,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void debug() {
-        Rect frame = new Rect();
-        getWindow().getDecorView().getWindowVisibleDisplayFrame(frame);
+        keyboardView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                int height = getWindowManager().getDefaultDisplay().getHeight();
+                int viewTop = getWindow().findViewById(Window.ID_ANDROID_CONTENT).getTop();
+                int viewBottom = getWindow().findViewById(Window.ID_ANDROID_CONTENT).getBottom();
+                int viewHeight = getWindow().findViewById(Window.ID_ANDROID_CONTENT).getHeight();
+                Log.e("this is view top", viewTop+" "+viewBottom+" "+viewHeight);
+                keyPos = new KeyPos(viewHeight, height);
+                refresh();
+            }
+        });
     }
 
 }
