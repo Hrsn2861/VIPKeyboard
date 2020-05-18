@@ -15,8 +15,8 @@ public class KeyPos {
     public Key keys[];
     public static float static_initx[];
     public static float static_inity[];
-    final float keyboardWidth = 1080f;
-    final float keyboardHeight = 680f;
+    float keyboardWidth;
+    float keyboardHeight;
     public float bottomThreshold;
     public float topThreshold;
     float screen_height_ratio = 1f;
@@ -27,9 +27,8 @@ public class KeyPos {
     float minHeightRatio = 0.4f;                        // shift 最小的高度
 
     // final float paddingTop = 1589 - keyboardHeight;     // This is the View's Height, I don't know how to get it before init;
-    final float headerHeight = 210;                     // header Height
-    public float partialwindowSize = 1589;               // relative window size
-    public float wholewindowSize = 1794;                 // the whole size of the window
+    public float partialwindowSize;               // relative window size
+    public float wholewindowSize;                 // the whole size of the window
 
     public final float minDistToStopShifting = 20000;           // 如果shift距离大于这个距离就不进行调整了，否则乱套了；
 
@@ -459,7 +458,6 @@ public class KeyPos {
         if(ch == KEY_NOT_FOUND) return false;
         int index = getCharIndex(ch);
 
-        Log.e("++++++", keys[index].getDist(x, y, VIP_LAYOUT)+" is the dist");
         if(keys[index].getDist(x, y, VIP_LAYOUT) > minDistToStopShifting) return false;
 
         int qua = keys[index].containTap(x, y, INIT_LAYOUT);
@@ -515,29 +513,40 @@ public class KeyPos {
         return xChanged || yChanged;
     }
 
-    public KeyPos(int partialwindowSize, int wholewindowSize) {
+    public KeyPos(int partialwindowSize, int wholewindowSize, int windowwidth) {
         this.partialwindowSize = partialwindowSize;
         this.wholewindowSize = wholewindowSize;
+        this.keyboardWidth = windowwidth;
+        this.keyboardHeight = windowwidth / 1080f * 680f;
         defaultParams();
         initKeys();
         initStatic();
     }
 
-    public void initStatic() {
+    void initStatic() {
         static_initx = new float[keys.length];
         static_inity = new float[keys.length];
         for(int i=0;i<keys.length;i++) {
             static_initx[i] = keys[i].init_x;
             static_inity[i] = keys[i].init_y;
         }
-        return;
+    }
+
+    public float getInitx(char c) {
+        return keys[keyPos[c-'a']].init_x;
+    }
+
+    public float getInity(char c) {
+        return keys[keyPos[c-'a']].init_y;
     }
 
     public static float getInitxByChar(char c) {
+        if(c < 'a' || c > 'z') return 0;
         return static_initx[keyPos[c-'a']];
     }
 
     public static float getInityByChar(char c) {
+        if(c < 'a' || c > 'z') return 0;
         return static_inity[keyPos[c-'a']];
     }
 

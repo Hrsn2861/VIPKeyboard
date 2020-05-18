@@ -56,6 +56,8 @@ public class KeyboardView extends AppCompatImageView {
     }
 
     void drawKeys(Canvas canvas) {
+        canvas.drawLine(0, 0, 1000, 0, Painters.textPaint);
+
         for(int i=0;i<this.keys.length;i++) {
             RectF rect = new RectF(
                     this.keys[i].getLeft(CURR_LAYOUT)+5*screen_width_ratio,

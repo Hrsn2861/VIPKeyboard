@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
 
     int currMode;
 
-    final float voiceSpeed = 2f;
+    final float voiceSpeed = 5f;
     final long maxWaitingTimeToSpeakCandidate = 800;
     boolean speakCandidate = true;
 
@@ -90,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
     void init() {
         int height = this.getWindowManager().getDefaultDisplay().getHeight();
         Log.e("+++++++++", ""+height);
-        keyPos = new KeyPos(0, height);
+        keyPos = new KeyPos(0, height, 0);
         keyboardView = (KeyboardView) (findViewById(R.id.keyboard));
         textView = (TextView) (findViewById(R.id.mytext));
         candidateView = (TextView) (findViewById(R.id.candidateView));
@@ -185,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
         switch (moveType) {
             case MotionSeperator.FLING_DOWN:                    // this means backspace
                 recorder.removeLast();
-                textSpeaker.speak(deleteLast()+" removed");
+                textSpeaker.speak(deleteLast());
                 currentChar.setChar(KEY_NOT_FOUND);
                 keyPos.reset();
                 refresh();
@@ -238,6 +238,7 @@ public class MainActivity extends AppCompatActivity {
                 if(!skipUpDetect || startPoint.getDistance(endPoint) > minMoveDistToCancelBestChar)                         // 如果这里面不要跳过或者移动距离超了才会进行更新currentchar，否则会直接利用touchdown时候的字符；
                     currentChar.setChar(keyPos.getKeyByPosition(x, y, currMode, getkey_mode));
                 if(currentChar.getChar() == KEY_NOT_FOUND) break;
+                if(currentChar.getChar() > 'z' || currentChar.getChar() < 'a') break;
                 if(timeGap > minTimeGapThreshold)               // 说明这个时候是确定的字符
                     recorder.add(currentChar.getChar(), true);
                 else
@@ -298,7 +299,6 @@ public class MainActivity extends AppCompatActivity {
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
         float y = event.getY()-keyPos.wholewindowSize+keyPos.partialwindowSize;
-        Log.e("this is the x and y", x+" "+y);
         // float y = event.getY();
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
@@ -331,14 +331,25 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onGlobalLayout() {
                 int height = getWindowManager().getDefaultDisplay().getHeight();
+
                 int viewTop = getWindow().findViewById(Window.ID_ANDROID_CONTENT).getTop();
                 int viewBottom = getWindow().findViewById(Window.ID_ANDROID_CONTENT).getBottom();
                 int viewHeight = getWindow().findViewById(Window.ID_ANDROID_CONTENT).getHeight();
+                int viewWidth = getWindow().findViewById(Window.ID_ANDROID_CONTENT).getWidth();
                 Log.e("this is view top", viewTop+" "+viewBottom+" "+viewHeight);
-                keyPos = new KeyPos(viewHeight, height);
+
+                keyPos = new KeyPos(viewHeight, height, viewWidth);
+
+                for(char c='a';c<='z';c++) {
+                    assert KeyPos.getInitxByChar(c) == keyPos.getInitx(c);
+                    assert KeyPos.getInityByChar(c) == keyPos.getInity(c);
+                    Log.e("---------------", c+" "+KeyPos.getInitxByChar(c)+" "+keyPos.getInitx(c));
+                    Log.e("---------------", c+" "+KeyPos.getInityByChar(c)+" "+keyPos.getInity(c));
+                }
                 refresh();
             }
         });
+
     }
 
 }
