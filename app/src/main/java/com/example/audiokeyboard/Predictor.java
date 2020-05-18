@@ -62,10 +62,11 @@ public class Predictor {
     }
 
     public char getVIPMostPossibleKey(DataRecorder recorder, float x, float y) {
-        double maxP = 0;
+        double maxP = Double.NEGATIVE_INFINITY;
         char maxPChar = KeyPos.KEY_NOT_FOUND;
         for(char c='a';c<='z';c++) {
-            double p = getVIPPossiblilityByChar(recorder, c) * getMultiByPointAndKey(x, y, c);
+            double p = getVIPPossiblilityByChar(recorder, c) + getMultiByPointAndKey(x, y, c);
+            Log.e("this is the p: ", c+" "+p);
             if(p > maxP) {
                 maxPChar = c;
                 maxP = p;
@@ -95,7 +96,7 @@ public class Predictor {
             if(!flag) continue;
             possibility += (buf * dictEng.get(i).getFreq());
         }
-        return possibility;
+        return Math.log(possibility);
     }
 
     public char getMostPossibleKey(DataRecorder recorder, float x, float y) {
@@ -130,9 +131,9 @@ public class Predictor {
     }
 
     public double getMultiByPointAndKey(float x, float y, char c) {             // 找到位置乘子
-        double ret = 1.0;
-        ret *= Normal(x, KeyPos.getInitxByChar(c), 52.7);
-        ret *= Normal(y, KeyPos.getInityByChar(c), 45.8);
+        double ret = 0.0;
+        ret += Math.log(Normal(x, KeyPos.getInitxByChar(c), 52.7));
+        ret += Math.log(Normal(y, KeyPos.getInityByChar(c), 45.8));
         return ret;
     }
 
@@ -156,9 +157,12 @@ public class Predictor {
 
     double calDiffChar(char target, char curr) {
         double ret = 1.0;
-        ret *= Normal(KeyPos.getInitxByChar(target), KeyPos.getInitxByChar(curr), 52.7);
-        ret *= Normal(KeyPos.getInityByChar(target), KeyPos.getInityByChar(curr), 45.8);
-        return ret;
+        if(target == curr) return 1.0;
+        else if(KeyPos.getKeyAround(curr).indexOf(target) == -1) return 0;
+        else return 0.2;
+        // ret *= Normal(KeyPos.getInitxByChar(target), KeyPos.getInitxByChar(curr), 52.7);
+        // ret *= Normal(KeyPos.getInityByChar(target), KeyPos.getInityByChar(curr), 45.8);
+        // return ret;
     }
 
     public ArrayList<Word> getVIPCandidate(DataRecorder recorder, float x, float y) {

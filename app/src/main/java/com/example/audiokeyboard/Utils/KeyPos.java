@@ -76,7 +76,7 @@ public class KeyPos {
     final int ADJUST_RESPECTIVELY = 0;
     int moveBodily = ADJUST_BODILY;
 
-    final HashMap<Character,String> nearMapping = new HashMap<Character, String>() {
+    final static HashMap<Character,String> nearMapping = new HashMap<Character, String>() {
         {
             put('q', "wa"); put('w', "qase"); put('e', "wsdr"); put('r', "edft"); put('t', "rfgy");
             put('y', "tghu"); put('u', "yhji"); put('i', "uyko"); put('o', "iklp"); put('p', "ol");
@@ -209,7 +209,7 @@ public class KeyPos {
         else return 2;
     }
 
-    public String getKeyAround(char ch) {
+    public static String getKeyAround(char ch) {
         return nearMapping.get(ch);
     }
 

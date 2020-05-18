@@ -343,13 +343,20 @@ public class MainActivity extends AppCompatActivity {
                 for(char c='a';c<='z';c++) {
                     assert KeyPos.getInitxByChar(c) == keyPos.getInitx(c);
                     assert KeyPos.getInityByChar(c) == keyPos.getInity(c);
-                    Log.e("---------------", c+" "+KeyPos.getInitxByChar(c)+" "+keyPos.getInitx(c));
-                    Log.e("---------------", c+" "+KeyPos.getInityByChar(c)+" "+keyPos.getInity(c));
                 }
                 refresh();
             }
         });
+    }
 
+    public void debug(String text) {
+        for(int i=0;i<predictor.dictEng.size();i++) {
+            if(predictor.dictEng.get(i).getText().equals(text)) {
+                Log.e("+++++++test word", predictor.dictEng.get(i).getText()+" "+predictor.dictEng.get(i).getFreq());
+                return;
+            }
+        }
+        Log.e("+++++++test word", "word not found");
     }
 
 }
