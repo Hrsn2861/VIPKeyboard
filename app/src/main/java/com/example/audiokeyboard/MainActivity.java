@@ -7,6 +7,7 @@ import android.content.res.Resources;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.media.Image;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -49,6 +50,8 @@ public class MainActivity extends AppCompatActivity {
     final float voiceSpeed = 5f;
     final long maxWaitingTimeToSpeakCandidate = 800;
     boolean speakCandidate = true;
+
+    MediaPlayer mediaPlayer;
 
     Letter currentChar;
     KeyboardView keyboardView;
@@ -104,6 +107,7 @@ public class MainActivity extends AppCompatActivity {
         initPredictor();
         initDict();
         this.candidates = new ArrayList<>();
+        mediaPlayer = MediaPlayer.create(this, R.raw.ios11_da);
     }
 
     void initPredictor() {
@@ -243,8 +247,11 @@ public class MainActivity extends AppCompatActivity {
                 if(currentChar.getChar() > 'z' || currentChar.getChar() < 'a') break;
                 if(timeGap > minTimeGapThreshold)               // 说明这个时候是确定的字符
                     recorder.add(currentChar.getChar(), true);
-                else
+                else {
+                    textSpeaker.stop();
                     recorder.add(currentChar.getChar(), false);
+                    mediaPlayer.start();
+                }
                 appendText(currentChar.getChar()+"");
                 refreshCandidate(0);
                 refreshCurrCandidate();
@@ -258,7 +265,6 @@ public class MainActivity extends AppCompatActivity {
         char mostPossible = predictor.getVIPMostPossibleKey(recorder, x, y);
         if(y < keyPos.topThreshold) {
             currentChar.setChar(KEY_NOT_FOUND);                         // 需要清空
-            textSpeaker.stop();
             textSpeaker.speak("out of range");
             return;
         }
@@ -266,7 +272,6 @@ public class MainActivity extends AppCompatActivity {
         if(keyPos.shift(mostPossible, x, y)) { ch = mostPossible; skipUpDetect = true;  refresh(); }    // 如果设置的话
         else { ch = keyPos.getKeyByPosition(x, y, currMode, getkey_mode); }
 
-        this.textSpeaker.stop();
         if(ch == KEY_NOT_FOUND) return;
         currentChar.setChar(ch);
         textSpeaker.speak(currentChar.getChar()+"");

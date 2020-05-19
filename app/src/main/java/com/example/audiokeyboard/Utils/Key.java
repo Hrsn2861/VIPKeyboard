@@ -13,7 +13,7 @@ public class Key {
     public float curr_width;
     public float curr_height;
 
-    float tapRange = 0.8f;
+    float tapRange = 0.7f;
 
     public static final int MODE_INIT = 0;
     public static final int MODE_VIP = 1;

@@ -66,7 +66,6 @@ public class Predictor {
         char maxPChar = KeyPos.KEY_NOT_FOUND;
         for(char c='a';c<='z';c++) {
             double p = getVIPPossiblilityByChar(recorder, c) + getMultiByPointAndKey(x, y, c);
-            Log.e("this is the p: ", c+" "+p);
             if(p > maxP) {
                 maxPChar = c;
                 maxP = p;
