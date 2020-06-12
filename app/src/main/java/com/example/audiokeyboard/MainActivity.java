@@ -3,12 +3,15 @@ package com.example.audiokeyboard;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.ActionBar;
+import android.content.ComponentName;
+import android.content.ServiceConnection;
 import android.content.res.Resources;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.media.Image;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ViewTreeObserver;
@@ -81,6 +84,18 @@ public class MainActivity extends AppCompatActivity {
     String currCandidate;
 
     Predictor predictor;
+
+    class PinyinDecoderServiceConnection implements ServiceConnection {
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mIPinyinDecoderService = IPinyinDecoderService.Stub.asInterface(service);
+        }
+        public void onServiceDisconnected(ComponentName name) {
+
+        }
+    }
+
+    public IPinyinDecoderService mIPinyinDecoderService = null;
+    public PinyinDecoderServiceConnection mPinyinDecoderServiceConnection = null;
 
     void defaultParams() {
         currMode = Key.MODE_VIP;
@@ -248,7 +263,6 @@ public class MainActivity extends AppCompatActivity {
                 if(timeGap > minTimeGapThreshold)               // 说明这个时候是确定的字符
                     recorder.add(currentChar.getChar(), true);
                 else {
-                    textSpeaker.stop();
                     recorder.add(currentChar.getChar(), false);
                     mediaPlayer.start();
                 }
