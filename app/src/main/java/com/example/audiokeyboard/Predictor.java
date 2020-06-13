@@ -165,8 +165,20 @@ public class Predictor {
     }
 
     public ArrayList<Word> getVIPCandidate(DataRecorder recorder, float x, float y) {
+
         ArrayList<Word> ret = new ArrayList<>();
         String data = recorder.getDataAsString();
+        ////
+        System.out.println("candidate:");
+        for (int j=0; j<data.length();j++) {
+            if (recorder.letterAt(j).isCorrect()) {
+                System.out.print(recorder.letterAt(j).getChar());
+            } else {
+                System.out.print("<"+recorder.letterAt(j).getChar()+">");
+            }
+        }
+        System.out.println();
+        ////
         for(int i=0;i<dictEng.size();i++) {
             Word bufWord = new Word(dictEng.get(i));
             if(bufWord.getText().length() < data.length()) continue;

@@ -2,13 +2,8 @@ package com.example.audiokeyboard;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.app.ActionBar;
 import android.content.ComponentName;
 import android.content.ServiceConnection;
-import android.content.res.Resources;
-import android.graphics.PointF;
-import android.graphics.Rect;
-import android.media.Image;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -17,7 +12,6 @@ import android.view.MotionEvent;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.audiokeyboard.Utils.DataRecorder;
@@ -45,12 +39,12 @@ public class MainActivity extends AppCompatActivity {
 
     final double minVelocityToStopSpeaking = 0.2;
     final double maxVelocityToDetermineHover = 0.1;
-    final long minTimeGapThreshold = 500;               // 如果大于这个时间长度说明key是确定的；
+    final long minTimeGapThreshold = 150;               // 如果大于这个时间长度说明key是确定的；
     final long minMoveDistToCancelBestChar = 20;        // 如果大于这个距离就取消选中的最佳；（感觉这个机制不是很靠谱）
 
     int currMode;
 
-    final float voiceSpeed = 5f;
+    final float voiceSpeed = 10f;
     final long maxWaitingTimeToSpeakCandidate = 800;
     boolean speakCandidate = true;
 
@@ -67,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
     TextView textView;
     TextView candidateView;
     TextView currCandidateView;
+    TextView debugCandidateView;
     ArrayList<Word> candidates;
 
     // record the edge pointer moved along
@@ -114,6 +109,7 @@ public class MainActivity extends AppCompatActivity {
         textView = (TextView) (findViewById(R.id.mytext));
         candidateView = (TextView) (findViewById(R.id.candidateView));
         currCandidateView = (TextView) (findViewById(R.id.currCandidate));
+        debugCandidateView = (TextView)(findViewById(R.id.debugCandidate));
         recorder = new DataRecorder();
         currentChar = new Letter('*');
         initTts();
@@ -200,13 +196,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void processTouchUp(float x, float y) {
+        isDaVoiceHappened = false;
         if(isTowFingerMotion) return;
         int moveType = MotionSeperator.getMotionType(startPoint, endPoint);
         long timeGap = startPoint.getTimeBetween(endPoint);
         switch (moveType) {
             case MotionSeperator.FLING_DOWN:                    // this means backspace
                 recorder.removeLast();
-                textSpeaker.speak(deleteLast());
+                textSpeaker.speak(deleteLast() + "已删除");
                 currentChar.setChar(KEY_NOT_FOUND);
                 keyPos.reset();
                 refresh();
@@ -260,15 +257,17 @@ public class MainActivity extends AppCompatActivity {
                     currentChar.setChar(keyPos.getKeyByPosition(x, y, currMode, getkey_mode));
                 if(currentChar.getChar() == KEY_NOT_FOUND) break;
                 if(currentChar.getChar() > 'z' || currentChar.getChar() < 'a') break;
-                if(timeGap > minTimeGapThreshold)               // 说明这个时候是确定的字符
+                if(timeGap > minTimeGapThreshold) {               // 说明这个时候是确定的字符
                     recorder.add(currentChar.getChar(), true);
+                    //mediaPlayer.start();
+                }
                 else {
                     recorder.add(currentChar.getChar(), false);
-                    mediaPlayer.start();
                 }
                 appendText(currentChar.getChar()+"");
                 refreshCandidate(0);
                 refreshCurrCandidate();
+                debugCandidateView.setText(recorder.getDebugString());
                 if(!candidates.isEmpty() && speakCandidate && timeGap > maxWaitingTimeToSpeakCandidate) textSpeaker.speak(candidates.get(0).getText());
                 break;
         }
@@ -279,7 +278,7 @@ public class MainActivity extends AppCompatActivity {
         char mostPossible = predictor.getVIPMostPossibleKey(recorder, x, y);
         if(y < keyPos.topThreshold) {
             currentChar.setChar(KEY_NOT_FOUND);                         // 需要清空
-            textSpeaker.speak("out of range");
+            textSpeaker.speak("出界");
             return;
         }
         char ch = KEY_NOT_FOUND;
@@ -289,13 +288,21 @@ public class MainActivity extends AppCompatActivity {
         if(ch == KEY_NOT_FOUND) return;
         currentChar.setChar(ch);
         textSpeaker.speak(currentChar.getChar()+"");
+        currMoveCharacter = ch;//?
     }
 
+    boolean isDaVoiceHappened = false;
     public void processTouchMove(float x, float y) {
         char curr = keyPos.getKeyByPosition(x, y, currMode);
         if(curr != currMoveCharacter) {
             textSpeaker.speak(curr+"");
             currMoveCharacter = curr;
+            mediaPlayer.start();
+        }
+        ////
+        if (!isDaVoiceHappened && System.currentTimeMillis() - startPoint.getTime() > minTimeGapThreshold) {
+            isDaVoiceHappened = true;
+            mediaPlayer.start();
         }
     }
 
@@ -307,7 +314,7 @@ public class MainActivity extends AppCompatActivity {
                 recorder.clear();
                 clearText();
                 currentChar.setChar(KEY_NOT_FOUND);
-                textSpeaker.speak("clear");
+                textSpeaker.speak("已清空");
                 keyPos.reset();
                 refresh();
                 refreshCurrCandidate();
