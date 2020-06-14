@@ -35,6 +35,18 @@ public class DataRecorder {
         return ret;
     }
 
+    public String getDebugString() {
+        String ret = "";
+        for (Letter l: dataSeq) {
+            if (l.isCorrect) {
+                ret += l.getChar();
+            } else {
+                ret += ("<" + l.getChar() + ">");
+            }
+        }
+        return ret;
+    }
+
     public Letter letterAt(int index) {
         return dataSeq.get(index);
     }

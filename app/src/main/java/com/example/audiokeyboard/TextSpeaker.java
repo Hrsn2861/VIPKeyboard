@@ -12,7 +12,7 @@ public class TextSpeaker implements TextToSpeech.OnInitListener{
     final String TAG = "TextSpeaker";
 
     TextToSpeech tts;
-    public float voiceSpeed = 5f;
+    public float voiceSpeed = 100f;
 
     public TextSpeaker(Context context) {
         init(context);

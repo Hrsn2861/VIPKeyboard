@@ -26,6 +26,7 @@ android {
     aaptOptions {
         noCompress "dat"
     }
+    ndkVersion "21.3.6528147"
 }
 
 dependencies {

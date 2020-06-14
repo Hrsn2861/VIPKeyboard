@@ -42,4 +42,12 @@
         android:layout_height="match_parent">
     </TextView>
 
+    <TextView
+        android:id="@+id/debugCandidate"
+        android:paddingTop="300dp"
+        android:paddingLeft="200dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+    </TextView>
+
 </RelativeLayout>
