@@ -4,6 +4,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.ActionBar;
 import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.res.Resources;
 import android.graphics.PointF;
@@ -12,6 +14,7 @@ import android.media.Image;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ViewTreeObserver;
@@ -85,6 +88,9 @@ public class MainActivity extends AppCompatActivity {
 
     Predictor predictor;
 
+    public IPinyinDecoderService mIPinyinDecoderService = null;
+    public PinyinDecoderServiceConnection mPinyinDecoderServiceConnection = null;
+
     class PinyinDecoderServiceConnection implements ServiceConnection {
         public void onServiceConnected(ComponentName name, IBinder service) {
             mIPinyinDecoderService = IPinyinDecoderService.Stub.asInterface(service);
@@ -93,9 +99,6 @@ public class MainActivity extends AppCompatActivity {
 
         }
     }
-
-    public IPinyinDecoderService mIPinyinDecoderService = null;
-    public PinyinDecoderServiceConnection mPinyinDecoderServiceConnection = null;
 
     void defaultParams() {
         currMode = Key.MODE_VIP;
@@ -149,18 +152,40 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    void initPinyin() {
+        if(mIPinyinDecoderService == null) {
+            Intent serviceIntent = new Intent();
+            serviceIntent.setClass(this, PinyinDecoderService.class);
+
+            if(mPinyinDecoderServiceConnection == null) {
+                mPinyinDecoderServiceConnection = new PinyinDecoderServiceConnection();
+            }
+
+            if(bindService(serviceIntent, mPinyinDecoderServiceConnection, Context.BIND_AUTO_CREATE)) {
+                Log.i("pinyin initialize", "successful");
+            }
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main_relative);
         init();
+        initPinyin();
         debug();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+    }
+
+    @Override
+    protected void onDestroy() {
+        unbindService(mPinyinDecoderServiceConnection);
+        super.onDestroy();
     }
 
     void appendText(String s) {
@@ -275,6 +300,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void processTouchDown(float x ,float y){
+
+        try {
+            Log.e("-----------", mIPinyinDecoderService.toString());
+            String word = mIPinyinDecoderService.imGetChoice(0);
+            Log.e("-------", word);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+
         textSpeaker.stop();
         char mostPossible = predictor.getVIPMostPossibleKey(recorder, x, y);
         if(y < keyPos.topThreshold) {
