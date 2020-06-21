@@ -29,6 +29,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -73,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
     TextView currCandidateView;
     TextView debugCandidateView;
     ArrayList<Word> candidates;
+    ArrayList<Word> candidatesChn;
 
     // record the edge pointer moved along
     boolean isTowFingerMotion = false;
@@ -113,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
 
     void init() {
         int height = this.getWindowManager().getDefaultDisplay().getHeight();
-        Log.e("+++++++++", ""+height);
+
         keyPos = new KeyPos(0, height, 0);
         keyboardView = (KeyboardView) (findViewById(R.id.keyboard));
         textView = (TextView) (findViewById(R.id.mytext));
@@ -128,8 +130,8 @@ public class MainActivity extends AppCompatActivity {
         initPredictor();
         initDict();
         this.candidates = new ArrayList<>();
+        this.candidatesChn = new ArrayList<>();
         mediaPlayer = MediaPlayer.create(this, R.raw.ios11_da);
-
         // PINYIN related
         // langMode = LANG_CHN_QUANPIN;
     }
@@ -172,12 +174,27 @@ public class MainActivity extends AppCompatActivity {
                 lineNo++;
                 String[] ss = line.split(" ");
                 predictor.dictChnChar.add(new Word(ss[2], Double.valueOf(ss[1])));
-                predictor.pinyin2word.put(ss[2], new Word(ss[2], Double.valueOf(ss[1])));
+                predictor.hanzi2word.put(ss[2], new Word(ss[2], Double.valueOf(ss[1])));
+                predictor.hanzi2pinyin.put(ss[2], ss[0]);
                 if (lineNo == DICT_SIZE)
                     break;
             }
             reader.close();
-            Log.e("init", "read dict_eng finished " + predictor.dictEng.size());
+        } catch (Exception e){
+            Log.e("init", "read dict_eng failed");
+        }
+
+        reader = new BufferedReader(new InputStreamReader((getResources().openRawResource(R.raw.dict_chn_hint))));
+        try{
+            int lineNo = 0;
+            while ((line = reader.readLine()) != null){
+                lineNo++;
+                String[] ss = line.split(" ");
+                textSpeaker.hanzi2hint.put(ss[0], ss[1]);
+                if (lineNo == DICT_SIZE)
+                    break;
+            }
+            reader.close();
         } catch (Exception e){
             Log.e("init", "read dict_eng failed");
         }
@@ -247,15 +264,23 @@ public class MainActivity extends AppCompatActivity {
 
         int end = Math.min(start+length, candidates.size());
 
-        ArrayList<Word> candidatesChn = new ArrayList<>();
+        candidatesChn.clear();
         if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
-            byte[] bytes = recorder.getDataAsString().getBytes();
-            int strlen = recorder.getDataLength();
+            int count_candidate = 0;
             try {
-                int listlen = mIPinyinDecoderService.imSearch(bytes, strlen);
-                List<String> wordlist = mIPinyinDecoderService.imGetChoiceList(0, listlen, mIPinyinDecoderService.imGetFixedLen());
-                for(int j=0;j<wordlist.size();j++) {
-                    candidatesChn.add(predictor.getWordFromPinyin(wordlist.get(j)));
+                for(int i=0;i<candidates.size();i++) {
+                    if(candidates.get(i).getText().length() > recorder.getDataLength())
+                        continue;
+                    count_candidate++;
+                    byte[] bytes = candidates.get(i).getText().getBytes();
+                    int strlen = candidates.get(i).getText().length();
+                    int listlen = mIPinyinDecoderService.imSearch(bytes, strlen);
+                    List<String> wordlist = mIPinyinDecoderService.imGetChoiceList(0, listlen, mIPinyinDecoderService.imGetFixedLen());
+                    for(int j=0;j<wordlist.size();j++) {
+                        candidatesChn.add(predictor.getWordFromPinyin(wordlist.get(j)));
+                    }
+                    if(count_candidate > 5)
+                        break;
                 }
             } catch (RemoteException e) {
                 e.printStackTrace();
@@ -263,17 +288,13 @@ public class MainActivity extends AppCompatActivity {
             end = Math.min(start+length, candidatesChn.size());
         }
 
-        Collections.sort(candidatesChn);
-
         for(int i=start;i<end;i++) {
             if(langMode == LANG_ENG)
                 s = s.concat(candidates.get(i).getText() + "\n");
             else {
                 s = s.concat(candidatesChn.get(i).getText() + "\n");
-                Log.e("[][][][]", candidatesChn.get(i).getText()+"");
             }
         }
-
         candidateView.setText(s);
     }
     void refreshCandidate(int start) { refreshCandidate(start, 5); }
@@ -300,12 +321,24 @@ public class MainActivity extends AppCompatActivity {
                 textSpeaker.stop();
                 recorder.clear();
                 currentChar.setChar(KEY_NOT_FOUND);
+
+                for(int i=0;i<s.length();i++) deleteLast();
+
                 if(currCandidateIndex != -1) {
-                    for(int i=0;i<s.length();i++) deleteLast();
                     s = currCandidate;
-                    appendText(s);
                 }
+
+                if(langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN) {
+                    Log.e("++++++", candidatesChn.size()+" is the size");
+                    s = candidatesChn.get(currCandidateIndex + 1).getText();
+                }
+
+                appendText(s);
+
                 textSpeaker.speak(s);
+                if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
+                    textSpeaker.speakHint(s);
+                }
                 appendText(" ");
                 keyPos.reset();
                 refresh();
@@ -319,6 +352,9 @@ public class MainActivity extends AppCompatActivity {
                 }
                 else {
                     currCandidate = this.candidates.get(currCandidateIndex).getText();
+                    if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
+                        currCandidate = candidatesChn.get(currCandidateIndex).getText();
+                    }
                 }
                 textSpeaker.speak(currCandidate);
                 refreshCurrCandidate();
@@ -354,7 +390,8 @@ public class MainActivity extends AppCompatActivity {
                 refreshCandidate(0);
                 refreshCurrCandidate();
                 debugCandidateView.setText(recorder.getDebugString());
-                if(!candidates.isEmpty() && speakCandidate && timeGap > maxWaitingTimeToSpeakCandidate) textSpeaker.speak(candidates.get(0).getText());
+                if(!candidates.isEmpty() && speakCandidate && timeGap > maxWaitingTimeToSpeakCandidate)
+                    textSpeaker.speak(candidates.get(0).getText());
                 break;
         }
     }
@@ -375,6 +412,7 @@ public class MainActivity extends AppCompatActivity {
         if(ch == KEY_NOT_FOUND) return;
         currentChar.setChar(ch);
         textSpeaker.speak(currentChar.getChar()+"");
+
         currMoveCharacter = ch;//?
     }
 
@@ -397,7 +435,7 @@ public class MainActivity extends AppCompatActivity {
         int motionType = MotionSeperator.getMotionType(startPoint, secondStartPoint, endPoint, secondEndPoint);
         switch(motionType) {
             case MotionSeperator.DOUBLE_FLING_DOWN:
-                Log.e("+++++++++++", "this is a double fling down");
+                // Log.e("+++++++++++", "this is a double fling down");
                 recorder.clear();
                 clearText();
                 currentChar.setChar(KEY_NOT_FOUND);
@@ -407,7 +445,7 @@ public class MainActivity extends AppCompatActivity {
                 refreshCurrCandidate();
                 break;
             default:
-                Log.e("++++++++++", "NULL MOVE");
+                // Log.e("++++++++++", "NULL MOVE");
         }
     }
 

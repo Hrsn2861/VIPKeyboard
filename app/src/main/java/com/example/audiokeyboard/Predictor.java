@@ -20,7 +20,9 @@ public class Predictor {
     public ArrayList<Word> dictChnJian;
     public ArrayList<Word> dictChnChar;
 
-    public HashMap<String, Word> pinyin2word;
+    public HashMap<String, Word> hanzi2word;
+    public HashMap<String, String> hanzi2pinyin;
+
     KeyPos keyPos;
 
     final int LANG_ENG = 0;
@@ -71,7 +73,8 @@ public class Predictor {
         dictChnQuan = new ArrayList<>();
         dictChnJian = new ArrayList<>();
         dictChnChar = new ArrayList<>();
-        pinyin2word = new HashMap<>();
+        hanzi2word = new HashMap<>();
+        hanzi2pinyin = new HashMap<>();
         this.keyPos = keyPos;
     }
 
@@ -248,7 +251,11 @@ public class Predictor {
     }
 
     public Word getWordFromPinyin(String str) {
-        return pinyin2word.getOrDefault(str, new Word(str, 0));
+        return hanzi2word.getOrDefault(str, new Word(str, 0));
+    }
+
+    public boolean checkHanzi2Pinyin(String hanzi, String pinyin) {
+        return hanzi2pinyin.getOrDefault(hanzi, "-").equals(pinyin);
     }
 
 }
