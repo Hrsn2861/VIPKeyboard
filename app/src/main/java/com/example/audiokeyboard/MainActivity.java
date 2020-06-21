@@ -28,6 +28,8 @@ import com.example.audiokeyboard.Utils.Word;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -46,6 +48,11 @@ public class MainActivity extends AppCompatActivity {
     final long minMoveDistToCancelBestChar = 20;        // 如果大于这个距离就取消选中的最佳；（感觉这个机制不是很靠谱）
 
     int currMode;
+
+    int langMode = 1;
+    final int LANG_ENG = 0;
+    final int LANG_CHN_QUANPIN = 1;
+    final int LANG_CHN_JIANPIN = 2;
 
     final float voiceSpeed = 10f;
     final long maxWaitingTimeToSpeakCandidate = 800;
@@ -122,22 +129,50 @@ public class MainActivity extends AppCompatActivity {
         initDict();
         this.candidates = new ArrayList<>();
         mediaPlayer = MediaPlayer.create(this, R.raw.ios11_da);
+
+        // PINYIN related
+        // langMode = LANG_CHN_QUANPIN;
     }
 
     void initPredictor() {
         predictor = new Predictor(this.keyPos);
     }
 
-    void initDict() {
-        Log.i("init", "start loading dict_eng");
-        BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().openRawResource(R.raw.dict_eng)));
+    ArrayList<Word> getInitDict(int id) {
+        BufferedReader reader = new BufferedReader(new InputStreamReader((getResources().openRawResource(id))));
+        ArrayList<Word> ret = new ArrayList<>();
         String line;
         try{
             int lineNo = 0;
             while ((line = reader.readLine()) != null){
                 lineNo++;
                 String[] ss = line.split(" ");
-                predictor.dictEng.add(new Word(ss[0], Double.valueOf(ss[1])));
+                ret.add(new Word(ss[0], Double.valueOf(ss[1])));
+                if (lineNo == DICT_SIZE)
+                    break;
+            }
+            reader.close();
+            Log.e("init", "read dict finished " + predictor.dictEng.size());
+        } catch (Exception e){
+            Log.e("init", "read dict failed");
+        }
+        return ret;
+    }
+
+    void initDict() {
+        predictor.dictEng = getInitDict(R.raw.dict_eng);
+        predictor.dictChnQuan = getInitDict(R.raw.dict_chn_quanpin);
+        predictor.dictChnJian = getInitDict(R.raw.dict_chn_jianpin);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader((getResources().openRawResource(R.raw.dict_chn_pinyin))));
+        String line;
+        try{
+            int lineNo = 0;
+            while ((line = reader.readLine()) != null){
+                lineNo++;
+                String[] ss = line.split(" ");
+                predictor.dictChnChar.add(new Word(ss[2], Double.valueOf(ss[1])));
+                predictor.pinyin2word.put(ss[2], new Word(ss[2], Double.valueOf(ss[1])));
                 if (lineNo == DICT_SIZE)
                     break;
             }
@@ -208,11 +243,37 @@ public class MainActivity extends AppCompatActivity {
     void refreshCandidate(int start, int length) {
         String s = "";
         // this.candidates = predictor.getCandidate(recorder);
-        this.candidates = predictor.getVIPCandidate(recorder, currPoint.getX(), currPoint.getY());
+        this.candidates = predictor.getVIPCandidate(recorder, currPoint.getX(), currPoint.getY(), langMode);
+
         int end = Math.min(start+length, candidates.size());
-        for(int i=start;i<end;i++) {
-            s = s.concat(candidates.get(i).getText() + "\n");
+
+        ArrayList<Word> candidatesChn = new ArrayList<>();
+        if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
+            byte[] bytes = recorder.getDataAsString().getBytes();
+            int strlen = recorder.getDataLength();
+            try {
+                int listlen = mIPinyinDecoderService.imSearch(bytes, strlen);
+                List<String> wordlist = mIPinyinDecoderService.imGetChoiceList(0, listlen, mIPinyinDecoderService.imGetFixedLen());
+                for(int j=0;j<wordlist.size();j++) {
+                    candidatesChn.add(predictor.getWordFromPinyin(wordlist.get(j)));
+                }
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+            end = Math.min(start+length, candidatesChn.size());
         }
+
+        Collections.sort(candidatesChn);
+
+        for(int i=start;i<end;i++) {
+            if(langMode == LANG_ENG)
+                s = s.concat(candidates.get(i).getText() + "\n");
+            else {
+                s = s.concat(candidatesChn.get(i).getText() + "\n");
+                Log.e("[][][][]", candidatesChn.get(i).getText()+"");
+            }
+        }
+
         candidateView.setText(s);
     }
     void refreshCandidate(int start) { refreshCandidate(start, 5); }
@@ -300,16 +361,8 @@ public class MainActivity extends AppCompatActivity {
 
     public void processTouchDown(float x ,float y){
 
-        try {
-            Log.e("-----------", mIPinyinDecoderService.toString());
-            String word = mIPinyinDecoderService.imGetChoice(0);
-            Log.e("-------", word);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
-
         textSpeaker.stop();
-        char mostPossible = predictor.getVIPMostPossibleKey(recorder, x, y);
+        char mostPossible = predictor.getVIPMostPossibleKey(recorder, x, y, langMode);
         if(y < keyPos.topThreshold) {
             currentChar.setChar(KEY_NOT_FOUND);                         // 需要清空
             textSpeaker.speak("出界");
