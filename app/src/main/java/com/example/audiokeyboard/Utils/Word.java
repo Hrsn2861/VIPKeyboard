@@ -28,4 +28,13 @@ public class Word implements Comparable<Word>{
     public double getFreq() {
         return freq;
     }
+
+    @Override
+    public String toString() {
+        return "Word{" +
+                "text='" + text + '\'' +
+                ", alias='" + alias + '\'' +
+                ", freq=" + freq +
+                '}';
+    }
 }

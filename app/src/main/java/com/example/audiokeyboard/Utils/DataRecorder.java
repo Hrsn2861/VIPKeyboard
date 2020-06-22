@@ -29,6 +29,9 @@ public class DataRecorder {
     }
 
     public String getDataAsString() {
+        /*
+        * get the plaing string;
+        */
         String ret = "";
         for(Letter l : dataSeq)
             ret += l.getChar();
@@ -36,6 +39,9 @@ public class DataRecorder {
     }
 
     public String getDebugString() {
+        /*
+        * gett the string whether, display the char whether it is certain or not;
+        */
         String ret = "";
         for (Letter l: dataSeq) {
             if (l.isCorrect) {

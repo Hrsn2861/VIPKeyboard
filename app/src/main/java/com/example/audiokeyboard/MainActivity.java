@@ -6,13 +6,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceManager;
 
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.preference.PreferenceActivity;
+import android.os.RemoteException;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -33,6 +34,7 @@ import com.example.audiokeyboard.Utils.Word;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -53,6 +55,12 @@ public class MainActivity extends AppCompatActivity {
 
     int currMode;
 
+    int langMode = 1;
+    final int LANG_ENG = 0;
+    final int LANG_CHN_QUANPIN = 1;
+    final int LANG_CHN_JIANPIN = 2;
+    final int maxChnCandidateLength = 100;
+
     final float voiceSpeed = 10f;
     final long maxWaitingTimeToSpeakCandidate = 800;
     boolean speakCandidate = true;
@@ -72,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
     TextView currCandidateView;
     TextView debugCandidateView;
     ArrayList<Word> candidates;
+    ArrayList<Word> candidatesChn;
 
     // record the edge pointer moved along
     boolean isTowFingerMotion = false;
@@ -89,8 +98,11 @@ public class MainActivity extends AppCompatActivity {
 
     Predictor predictor;
 
-    //config variables
+    //settings variables
     boolean isDaFirst = true;
+    //
+    public IPinyinDecoderService mIPinyinDecoderService = null;
+    public PinyinDecoderServiceConnection mPinyinDecoderServiceConnection = null;
 
     class PinyinDecoderServiceConnection implements ServiceConnection {
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -100,9 +112,6 @@ public class MainActivity extends AppCompatActivity {
 
         }
     }
-
-    public IPinyinDecoderService mIPinyinDecoderService = null;
-    public PinyinDecoderServiceConnection mPinyinDecoderServiceConnection = null;
 
     void defaultParams() {
         currMode = Key.MODE_VIP;
@@ -116,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
     void init() {
         updateSettings();
         int height = this.getWindowManager().getDefaultDisplay().getHeight();
-        Log.e("+++++++++", ""+height);
+
         keyPos = new KeyPos(0, height, 0);
         keyboardView = (KeyboardView) (findViewById(R.id.keyboard));
         textView = (TextView) (findViewById(R.id.mytext));
@@ -131,30 +140,89 @@ public class MainActivity extends AppCompatActivity {
         initPredictor();
         initDict();
         this.candidates = new ArrayList<>();
+        this.candidatesChn = new ArrayList<>();
         mediaPlayer = MediaPlayer.create(this, R.raw.ios11_da);
+        // PINYIN related
+        // langMode = LANG_CHN_QUANPIN;
     }
 
     void initPredictor() {
         predictor = new Predictor(this.keyPos);
     }
 
-    void initDict() {
-        Log.i("init", "start loading dict_eng");
-        BufferedReader reader = new BufferedReader(new InputStreamReader(getResources().openRawResource(R.raw.dict_eng)));
+    ArrayList<Word> getInitDict(int id) {
+        BufferedReader reader = new BufferedReader(new InputStreamReader((getResources().openRawResource(id))));
+        ArrayList<Word> ret = new ArrayList<>();
         String line;
         try{
             int lineNo = 0;
             while ((line = reader.readLine()) != null){
                 lineNo++;
                 String[] ss = line.split(" ");
-                predictor.dictEng.add(new Word(ss[0], Double.valueOf(ss[1])));
+                ret.add(new Word(ss[0], Double.valueOf(ss[1])));
                 if (lineNo == DICT_SIZE)
                     break;
             }
             reader.close();
-            Log.e("init", "read dict_eng finished " + predictor.dictEng.size());
+            Log.e("init", "read dict finished " + predictor.dictEng.size());
+        } catch (Exception e){
+            Log.e("init", "read dict failed");
+        }
+        return ret;
+    }
+
+    void initDict() {
+        predictor.dictEng = getInitDict(R.raw.dict_eng);
+        predictor.dictChnQuan = getInitDict(R.raw.dict_chn_quanpin);
+        predictor.dictChnJian = getInitDict(R.raw.dict_chn_jianpin);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader((getResources().openRawResource(R.raw.dict_chn_pinyin))));
+        String line;
+        try{
+            int lineNo = 0;
+            while ((line = reader.readLine()) != null){
+                lineNo++;
+                String[] ss = line.split(" ");
+                predictor.dictChnChar.add(new Word(ss[2], Double.valueOf(ss[1])));
+                predictor.hanzi2word.put(ss[2], new Word(ss[2], Double.valueOf(ss[1])));
+                predictor.hanzi2pinyin.put(ss[2], ss[0]);
+                if (lineNo == DICT_SIZE)
+                    break;
+            }
+            reader.close();
         } catch (Exception e){
             Log.e("init", "read dict_eng failed");
+        }
+
+        reader = new BufferedReader(new InputStreamReader((getResources().openRawResource(R.raw.dict_chn_hint))));
+        try{
+            int lineNo = 0;
+            while ((line = reader.readLine()) != null){
+                lineNo++;
+                String[] ss = line.split(" ");
+                if(ss.length == 1) continue;
+                textSpeaker.hanzi2hint.put(ss[0], ss[1]);
+                if (lineNo == DICT_SIZE)
+                    break;
+            }
+            reader.close();
+        } catch (Exception e){
+            Log.e("init", "read dict_hint failed");
+        }
+    }
+
+    void initPinyin() {
+        if(mIPinyinDecoderService == null) {
+            Intent serviceIntent = new Intent();
+            serviceIntent.setClass(this, PinyinDecoderService.class);
+
+            if(mPinyinDecoderServiceConnection == null) {
+                mPinyinDecoderServiceConnection = new PinyinDecoderServiceConnection();
+            }
+
+            if(bindService(serviceIntent, mPinyinDecoderServiceConnection, Context.BIND_AUTO_CREATE)) {
+                Log.i("pinyin initialize", "successful");
+            }
         }
     }
 
@@ -164,6 +232,7 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main_relative);
         init();
+        initPinyin();
         debug();
     }
 
@@ -201,6 +270,12 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
     }
 
+    @Override
+    protected void onDestroy() {
+        unbindService(mPinyinDecoderServiceConnection);
+        super.onDestroy();
+    }
+
     void appendText(String s) {
         inputText = inputText+s;
         this.textView.setText(inputText);
@@ -225,16 +300,54 @@ public class MainActivity extends AppCompatActivity {
     void refreshCandidate(int start, int length) {
         String s = "";
         // this.candidates = predictor.getCandidate(recorder);
-        this.candidates = predictor.getVIPCandidate(recorder, currPoint.getX(), currPoint.getY());
+        this.candidates = predictor.getVIPCandidate(recorder, currPoint.getX(), currPoint.getY(), langMode);
+
         int end = Math.min(start+length, candidates.size());
+
+        candidatesChn.clear();
+        if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
+            int count_candidate = 0;
+            try {
+                for(int i=0;i<candidates.size();i++) {
+                    if(candidates.get(i).getText().length() > recorder.getDataLength())
+                        continue;
+                    count_candidate++;
+                    byte[] bytes = candidates.get(i).getText().getBytes();
+                    int strlen = candidates.get(i).getText().length();
+                    int listlen = mIPinyinDecoderService.imSearch(bytes, strlen);
+                    List<String> wordlist = mIPinyinDecoderService.imGetChoiceList(0, listlen, mIPinyinDecoderService.imGetFixedLen());
+                    for(int j=0;j<wordlist.size();j++) {
+                        candidatesChn.add(predictor.getWordFromPinyin(wordlist.get(j)));
+                    }
+                    if(count_candidate > maxChnCandidateLength)
+                        break;
+                }
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+            end = Math.min(start+length, candidatesChn.size());
+        }
+
         for(int i=start;i<end;i++) {
-            s = s.concat(candidates.get(i).getText() + "\n");
+            if(langMode == LANG_ENG)
+                s = s.concat(candidates.get(i).getText() + "\n");
+            else {
+                s = s.concat(candidatesChn.get(i).getText() + "\n");
+            }
         }
         candidateView.setText(s);
+        Log.e("------ this is candidate view", s);
     }
     void refreshCandidate(int start) { refreshCandidate(start, 5); }
     void refreshCurrCandidate() {
         currCandidateView.setText(currCandidate);
+    }
+
+    void speak(String text2speak) {
+        if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN)
+            textSpeaker.speakHint(text2speak);
+        else if(langMode == LANG_ENG)
+            textSpeaker.speak(text2speak);
     }
 
     public void processTouchUp(float x, float y) {
@@ -254,15 +367,29 @@ public class MainActivity extends AppCompatActivity {
             case MotionSeperator.FLING_UP:                   // this means word selected
                 String s = recorder.getDataAsString();
                 textSpeaker.stop();
-                recorder.clear();
                 currentChar.setChar(KEY_NOT_FOUND);
+
+                for(int i=0;i<s.length();i++) deleteLast();
+
                 if(currCandidateIndex != -1) {
-                    for(int i=0;i<s.length();i++) deleteLast();
                     s = currCandidate;
-                    appendText(s);
                 }
-                textSpeaker.speak(s);
-                appendText(" ");
+
+                if(langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN) {
+                    Log.e("++++++", candidatesChn.size()+" is the size");
+                    if(currCandidateIndex < 0)
+                        s = recorder.getDataAsString();
+                    else
+                        s = candidatesChn.get(currCandidateIndex).getText();
+                }
+
+                recorder.clear();
+
+                appendText(s);
+                speak(s);
+                if(langMode == LANG_ENG) {
+                    appendText(" ");
+                }
                 keyPos.reset();
                 refresh();
                 refreshCandidate(0);
@@ -275,8 +402,12 @@ public class MainActivity extends AppCompatActivity {
                 }
                 else {
                     currCandidate = this.candidates.get(currCandidateIndex).getText();
+                    if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
+                        currCandidate = candidatesChn.get(currCandidateIndex).getText();
+                    }
                 }
-                textSpeaker.speak(currCandidate);
+                speak(currCandidate);
+                // refreshCandidate(currCandidateIndex);
                 refreshCurrCandidate();
                 break;
             case MotionSeperator.FLING_LEFT:
@@ -288,7 +419,8 @@ public class MainActivity extends AppCompatActivity {
                 else {
                     currCandidate = currCandidateIndex == -1 ? "" : this.candidates.get(currCandidateIndex).getText();
                 }
-                textSpeaker.speak(currCandidate);
+                speak(currCandidate);
+                // refreshCandidate(currCandidateIndex);
                 refreshCurrCandidate();
                 break;
             case MotionSeperator.NORMAL_MOVE:
@@ -310,7 +442,13 @@ public class MainActivity extends AppCompatActivity {
                 refreshCandidate(0);
                 refreshCurrCandidate();
                 debugCandidateView.setText(recorder.getDebugString());
-                if(!candidates.isEmpty() && speakCandidate && timeGap > maxWaitingTimeToSpeakCandidate) textSpeaker.speak(candidates.get(0).getText());
+                if(!candidates.isEmpty() && speakCandidate && timeGap > maxWaitingTimeToSpeakCandidate) {
+                    if(langMode == LANG_ENG)
+                        textSpeaker.speak(candidates.get(0).getText());
+                    else if(langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN) {
+                        textSpeaker.speakHint(candidatesChn.get(0).getText());
+                    }
+                }
                 break;
         }
     }
@@ -318,7 +456,7 @@ public class MainActivity extends AppCompatActivity {
     public void processTouchDown(float x ,float y){
         if (isDaFirst()) {
             textSpeaker.stop();
-            char mostPossible = predictor.getVIPMostPossibleKey(recorder, x, y);
+            char mostPossible = predictor.getVIPMostPossibleKey(recorder, x, y, langMode);
             if (y < keyPos.topThreshold) {
                 currentChar.setChar(KEY_NOT_FOUND);                         // 需要清空
                 textSpeaker.speak("出界");
@@ -339,7 +477,7 @@ public class MainActivity extends AppCompatActivity {
             currMoveCharacter = ch;//?
         } else {
             textSpeaker.stop();
-            char mostPossible = predictor.getVIPMostPossibleKey(recorder, x, y);
+            char mostPossible = predictor.getVIPMostPossibleKey(recorder, x, y, langMode);
             if (y < keyPos.topThreshold) {
                 currentChar.setChar(KEY_NOT_FOUND);                         // 需要清空
                 textSpeaker.speak("出界");
@@ -403,17 +541,18 @@ public class MainActivity extends AppCompatActivity {
         int motionType = MotionSeperator.getMotionType(startPoint, secondStartPoint, endPoint, secondEndPoint);
         switch(motionType) {
             case MotionSeperator.DOUBLE_FLING_DOWN:
-                Log.e("+++++++++++", "this is a double fling down");
+                // Log.e("+++++++++++", "this is a double fling down");
                 recorder.clear();
                 clearText();
                 currentChar.setChar(KEY_NOT_FOUND);
                 textSpeaker.speak("已清空");
                 keyPos.reset();
                 refresh();
+                currCandidate = "";
                 refreshCurrCandidate();
                 break;
             default:
-                Log.e("++++++++++", "NULL MOVE");
+                // Log.e("++++++++++", "NULL MOVE");
         }
     }
 

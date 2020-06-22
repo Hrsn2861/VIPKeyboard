@@ -407,7 +407,7 @@ static int registerNativeMethods(JNIEnv* env, const char* className,
 static int registerNatives(JNIEnv* env)
 {
     if (!registerNativeMethods(env,
-           "com/example/fansy/audiokeyboard/PinyinDecoderService",
+           "com/example/audiokeyboard/PinyinDecoderService",
             gMethods, sizeof(gMethods) / sizeof(gMethods[0])))
         return JNI_FALSE;
 

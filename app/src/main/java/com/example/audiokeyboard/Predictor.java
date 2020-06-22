@@ -11,11 +11,23 @@ import com.example.audiokeyboard.Utils.Word;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 
 public class Predictor {
     double predictRange = 0.5;
     public ArrayList<Word> dictEng;
+    public ArrayList<Word> dictChnQuan;
+    public ArrayList<Word> dictChnJian;
+    public ArrayList<Word> dictChnChar;
+
+    public HashMap<String, Word> hanzi2word;
+    public HashMap<String, String> hanzi2pinyin;
+
     KeyPos keyPos;
+
+    final int LANG_ENG = 0;
+    final int LANG_CHN_QUAN = 1;
+    final int LANG_CHN_JIAN = 2;
 
     public double[][] touchmodelBivariate = new double[][] {                                                        // miux, miuy, sigmax, sigmay, rho
             {106.5370705244123,310.4864376130199,30.84643738543627,108.36748192235623,-0.02330831833564358},
@@ -58,14 +70,19 @@ public class Predictor {
 
     public Predictor(KeyPos keyPos) {
         dictEng = new ArrayList<>();
+        dictChnQuan = new ArrayList<>();
+        dictChnJian = new ArrayList<>();
+        dictChnChar = new ArrayList<>();
+        hanzi2word = new HashMap<>();
+        hanzi2pinyin = new HashMap<>();
         this.keyPos = keyPos;
     }
 
-    public char getVIPMostPossibleKey(DataRecorder recorder, float x, float y) {
+    public char getVIPMostPossibleKey(DataRecorder recorder, float x, float y, int langMode) {
         double maxP = Double.NEGATIVE_INFINITY;
         char maxPChar = KeyPos.KEY_NOT_FOUND;
         for(char c='a';c<='z';c++) {
-            double p = getVIPPossiblilityByChar(recorder, c) + getMultiByPointAndKey(x, y, c);
+            double p = getVIPPossiblilityByChar(recorder, c, langMode) + getMultiByPointAndKey(x, y, c);
             if(p > maxP) {
                 maxPChar = c;
                 maxP = p;
@@ -74,11 +91,27 @@ public class Predictor {
         return maxPChar;
     }
 
-    public double getVIPPossiblilityByChar(DataRecorder recorder, char c) {
+    public double getVIPPossiblilityByChar(DataRecorder recorder, char c, int langMode) {
         double possibility = 0.0;
+
+        ArrayList<Word> dict;
+        switch (langMode) {
+            case LANG_ENG:
+                dict = dictEng;
+                break;
+            case LANG_CHN_QUAN:
+                dict = dictChnQuan;
+                break;
+            case LANG_CHN_JIAN:
+                dict = dictChnJian;
+                break;
+            default:
+                throw new RuntimeException();
+        }
+
         String data = recorder.getDataAsString();
-        for(int i=0;i<dictEng.size();i++) {
-            String text = dictEng.get(i).getText();
+        for(int i=0;i<dict.size();i++) {
+            String text = dict.get(i).getText();
             if(text.length() <= recorder.getDataLength()) continue;
             if(text.charAt(recorder.getDataLength()) != c) continue;
             boolean flag = true;
@@ -93,7 +126,7 @@ public class Predictor {
                 buf *= calDiffChar(text.charAt(j), data.charAt(j));
             }
             if(!flag) continue;
-            possibility += (buf * dictEng.get(i).getFreq());
+            possibility += (buf * dict.get(i).getFreq());
         }
         return Math.log(possibility);
     }
@@ -164,7 +197,7 @@ public class Predictor {
         // return ret;
     }
 
-    public ArrayList<Word> getVIPCandidate(DataRecorder recorder, float x, float y) {
+    public ArrayList<Word> getVIPCandidate(DataRecorder recorder, float x, float y, int langMode) {
 
         ArrayList<Word> ret = new ArrayList<>();
         String data = recorder.getDataAsString();
@@ -179,8 +212,24 @@ public class Predictor {
         }
         System.out.println();
         ////
-        for(int i=0;i<dictEng.size();i++) {
-            Word bufWord = new Word(dictEng.get(i));
+
+        ArrayList<Word> dict;
+        switch (langMode) {
+            case LANG_ENG:
+                dict = dictEng;
+                break;
+            case LANG_CHN_QUAN:
+                dict = dictChnQuan;
+                break;
+            case LANG_CHN_JIAN:
+                dict = dictChnJian;
+                break;
+            default:
+                throw new RuntimeException();
+        }
+
+        for(int i=0;i<dict.size();i++) {
+            Word bufWord = new Word(dict.get(i));
             if(bufWord.getText().length() < data.length()) continue;
             boolean flag = true;
             for(int j=0;j<data.length();j++) {
@@ -199,6 +248,14 @@ public class Predictor {
 
         Collections.sort(ret);
         return ret;
+    }
+
+    public Word getWordFromPinyin(String str) {
+        return hanzi2word.getOrDefault(str, new Word(str, 0));
+    }
+
+    public boolean checkHanzi2Pinyin(String hanzi, String pinyin) {
+        return hanzi2pinyin.getOrDefault(hanzi, "-").equals(pinyin);
     }
 
 }
