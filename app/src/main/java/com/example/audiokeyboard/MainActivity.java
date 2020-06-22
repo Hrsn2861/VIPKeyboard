@@ -54,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
     final int LANG_ENG = 0;
     final int LANG_CHN_QUANPIN = 1;
     final int LANG_CHN_JIANPIN = 2;
+    final int maxChnCandidateLength = 100;
 
     final float voiceSpeed = 10f;
     final long maxWaitingTimeToSpeakCandidate = 800;
@@ -280,8 +281,8 @@ public class MainActivity extends AppCompatActivity {
                     for(int j=0;j<wordlist.size();j++) {
                         candidatesChn.add(predictor.getWordFromPinyin(wordlist.get(j)));
                     }
-                    // if(count_candidate > 5)
-                    //     break;
+                    if(count_candidate > maxChnCandidateLength)
+                        break;
                 }
             } catch (RemoteException e) {
                 e.printStackTrace();
@@ -460,6 +461,7 @@ public class MainActivity extends AppCompatActivity {
                 textSpeaker.speak("已清空");
                 keyPos.reset();
                 refresh();
+                currCandidate = "";
                 refreshCurrCandidate();
                 break;
             default:
