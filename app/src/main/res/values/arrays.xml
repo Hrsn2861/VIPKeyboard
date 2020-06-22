@@ -9,4 +9,16 @@
         <item>reply</item>
         <item>reply_all</item>
     </string-array>
+
+    <string-array name="lang_entries">
+        <item>中文全拼</item>
+        <item>中文简拼</item>
+        <item>英文单词</item>
+    </string-array>
+
+    <string-array name="lang_values">
+        <item>quanpin</item>
+        <item>jianpin</item>
+        <item>eng</item>
+    </string-array>
 </resources>

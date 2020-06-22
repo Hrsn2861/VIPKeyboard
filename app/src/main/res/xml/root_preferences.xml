@@ -6,6 +6,14 @@
         app:summaryOff="先读再嗒"
         app:summaryOn="先嗒再读"/>
 
+    <ListPreference
+        app:defaultValue="eng"
+        app:entries="@array/lang_entries"
+        app:entryValues="@array/lang_values"
+        app:key="langmode"
+        app:title="语言选择"
+        app:useSimpleSummaryProvider="true" />
+
     <PreferenceCategory app:title="@string/messages_header">
 
         <EditTextPreference

@@ -257,6 +257,18 @@ public class MainActivity extends AppCompatActivity {
     private void updateSettings() {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         isDaFirst = sharedPreferences.getBoolean("feedback", true);
+        switch (sharedPreferences.getString("langmode", "eng")) {
+            case "quanpin":
+                langMode = LANG_CHN_QUANPIN;
+                break;
+            case "jianpin":
+                langMode = LANG_CHN_JIANPIN;
+                break;
+            case "eng":
+            default:
+                langMode = LANG_ENG;
+                break;
+        }
     }
 
     @Override
