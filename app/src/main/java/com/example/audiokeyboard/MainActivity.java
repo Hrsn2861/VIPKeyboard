@@ -1,13 +1,21 @@
 package com.example.audiokeyboard;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.preference.PreferenceManager;
 
 import android.content.ComponentName;
+import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.preference.PreferenceActivity;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.ViewTreeObserver;
 import android.view.Window;
@@ -33,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
     int getkey_mode;
     final int GETKEY_STRICT = 1;
     final int GETKEY_LOOSE = 0;
+    final int SETTINGS_CODE = 11;
 
     final long MIN_TIME_GAP = 1000;
     final char KEY_NOT_FOUND = '*';
@@ -80,6 +89,9 @@ public class MainActivity extends AppCompatActivity {
 
     Predictor predictor;
 
+    //config variables
+    boolean isDaFirst = true;
+
     class PinyinDecoderServiceConnection implements ServiceConnection {
         public void onServiceConnected(ComponentName name, IBinder service) {
             mIPinyinDecoderService = IPinyinDecoderService.Stub.asInterface(service);
@@ -102,6 +114,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void init() {
+        updateSettings();
         int height = this.getWindowManager().getDefaultDisplay().getHeight();
         Log.e("+++++++++", ""+height);
         keyPos = new KeyPos(0, height, 0);
@@ -152,6 +165,35 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main_relative);
         init();
         debug();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.actionbar, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_settings:
+                startActivityForResult(new Intent(this, SettingsActivity.class), SETTINGS_CODE);
+                break;
+            default:
+                break;
+        }
+        return true;
+    }
+
+    private void updateSettings() {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        isDaFirst = sharedPreferences.getBoolean("feedback", true);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        updateSettings();
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
@@ -274,35 +316,86 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void processTouchDown(float x ,float y){
-        textSpeaker.stop();
-        char mostPossible = predictor.getVIPMostPossibleKey(recorder, x, y);
-        if(y < keyPos.topThreshold) {
-            currentChar.setChar(KEY_NOT_FOUND);                         // 需要清空
-            textSpeaker.speak("出界");
-            return;
-        }
-        char ch = KEY_NOT_FOUND;
-        if(keyPos.shift(mostPossible, x, y)) { ch = mostPossible; skipUpDetect = true;  refresh(); }    // 如果设置的话
-        else { ch = keyPos.getKeyByPosition(x, y, currMode, getkey_mode); }
+        if (isDaFirst()) {
+            textSpeaker.stop();
+            char mostPossible = predictor.getVIPMostPossibleKey(recorder, x, y);
+            if (y < keyPos.topThreshold) {
+                currentChar.setChar(KEY_NOT_FOUND);                         // 需要清空
+                textSpeaker.speak("出界");
+                return;
+            }
+            char ch = KEY_NOT_FOUND;
+            if (keyPos.shift(mostPossible, x, y)) {
+                ch = mostPossible;
+                skipUpDetect = true;
+                refresh();
+            }    // 如果设置的话
+            else {
+                ch = keyPos.getKeyByPosition(x, y, currMode, getkey_mode);
+            }
 
-        if(ch == KEY_NOT_FOUND) return;
-        currentChar.setChar(ch);
-        textSpeaker.speak(currentChar.getChar()+"");
-        currMoveCharacter = ch;//?
+            if (ch == KEY_NOT_FOUND) return;
+            currentChar.setChar(ch);
+            currMoveCharacter = ch;//?
+        } else {
+            textSpeaker.stop();
+            char mostPossible = predictor.getVIPMostPossibleKey(recorder, x, y);
+            if (y < keyPos.topThreshold) {
+                currentChar.setChar(KEY_NOT_FOUND);                         // 需要清空
+                textSpeaker.speak("出界");
+                return;
+            }
+            char ch = KEY_NOT_FOUND;
+            if (keyPos.shift(mostPossible, x, y)) {
+                ch = mostPossible;
+                skipUpDetect = true;
+                refresh();
+            }    // 如果设置的话
+            else {
+                ch = keyPos.getKeyByPosition(x, y, currMode, getkey_mode);
+            }
+
+            if (ch == KEY_NOT_FOUND) return;
+            currentChar.setChar(ch);
+            textSpeaker.speak(currentChar.getChar() + "");
+            currMoveCharacter = ch;//?
+        }
+    }
+
+    boolean isDaFirst() {
+        return isDaFirst;
     }
 
     boolean isDaVoiceHappened = false;
+    char lastReadKey = ' ';
     public void processTouchMove(float x, float y) {
-        char curr = keyPos.getKeyByPosition(x, y, currMode);
-        if(curr != currMoveCharacter) {
-            textSpeaker.speak(curr+"");
-            currMoveCharacter = curr;
-            mediaPlayer.start();
-        }
-        ////
-        if (!isDaVoiceHappened && System.currentTimeMillis() - startPoint.getTime() > minTimeGapThreshold) {
-            isDaVoiceHappened = true;
-            mediaPlayer.start();
+        if (isDaFirst()) {//先嗒再读
+            char curr = keyPos.getKeyByPosition(x, y, currMode);
+            if (!isDaVoiceHappened) {
+                mediaPlayer.start();
+                isDaVoiceHappened = true;
+            }
+            if (curr != currMoveCharacter) {
+                currMoveCharacter = curr;
+            }
+            ////
+            if (curr != lastReadKey && System.currentTimeMillis() - startPoint.getTime() > minTimeGapThreshold) {
+                textSpeaker.speak(curr + "");
+                lastReadKey = curr;
+            }
+
+        } else { //先读再嗒
+            char curr = keyPos.getKeyByPosition(x, y, currMode);
+            if (curr != currMoveCharacter) {
+                textSpeaker.speak(curr + "");
+                currMoveCharacter = curr;
+                mediaPlayer.start();
+            }
+            ////
+            if (!isDaVoiceHappened && System.currentTimeMillis() - startPoint.getTime() > minTimeGapThreshold) {
+                isDaVoiceHappened = true;
+                mediaPlayer.start();
+            }
         }
     }
 
