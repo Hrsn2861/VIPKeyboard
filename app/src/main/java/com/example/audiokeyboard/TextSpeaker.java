@@ -5,6 +5,7 @@ import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.util.HashMap;
 import java.util.Locale;
 
 public class TextSpeaker implements TextToSpeech.OnInitListener{
@@ -14,8 +15,14 @@ public class TextSpeaker implements TextToSpeech.OnInitListener{
     TextToSpeech tts;
     public float voiceSpeed = 100f;
 
+    public HashMap<String, String> hanzi2hint;
+    final int LANG_ENG = 0;
+    final int LANG_CHN_QUANPIN = 1;
+    final int LANG_CHN_JIANPIN = 2;
+
     public TextSpeaker(Context context) {
         init(context);
+        this.hanzi2hint = new HashMap<>();
     }
 
     void init(final Context context) {
@@ -44,6 +51,10 @@ public class TextSpeaker implements TextToSpeech.OnInitListener{
     public void speak(String text2speak, boolean flush) {
         int mode = flush ? TextToSpeech.QUEUE_FLUSH : TextToSpeech.QUEUE_ADD;
         this.tts.speak(text2speak, mode, null, null);
+    }
+
+    public void speakHint(String text2speak) {
+        this.speak(text2speak+"  "+hanzi2hint.getOrDefault(text2speak, ""));
     }
 
     public void stop() {
