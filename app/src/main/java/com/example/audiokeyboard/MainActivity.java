@@ -190,13 +190,14 @@ public class MainActivity extends AppCompatActivity {
             while ((line = reader.readLine()) != null){
                 lineNo++;
                 String[] ss = line.split(" ");
+                if(ss.length == 1) continue;
                 textSpeaker.hanzi2hint.put(ss[0], ss[1]);
                 if (lineNo == DICT_SIZE)
                     break;
             }
             reader.close();
         } catch (Exception e){
-            Log.e("init", "read dict_eng failed");
+            Log.e("init", "read dict_hint failed");
         }
     }
 
@@ -279,8 +280,8 @@ public class MainActivity extends AppCompatActivity {
                     for(int j=0;j<wordlist.size();j++) {
                         candidatesChn.add(predictor.getWordFromPinyin(wordlist.get(j)));
                     }
-                    if(count_candidate > 5)
-                        break;
+                    // if(count_candidate > 5)
+                    //     break;
                 }
             } catch (RemoteException e) {
                 e.printStackTrace();
@@ -296,10 +297,18 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         candidateView.setText(s);
+        Log.e("------ this is candidate view", s);
     }
     void refreshCandidate(int start) { refreshCandidate(start, 5); }
     void refreshCurrCandidate() {
         currCandidateView.setText(currCandidate);
+    }
+
+    void speak(String text2speak) {
+        if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN)
+            textSpeaker.speakHint(text2speak);
+        else if(langMode == LANG_ENG)
+            textSpeaker.speak(text2speak);
     }
 
     public void processTouchUp(float x, float y) {
@@ -319,7 +328,6 @@ public class MainActivity extends AppCompatActivity {
             case MotionSeperator.FLING_UP:                   // this means word selected
                 String s = recorder.getDataAsString();
                 textSpeaker.stop();
-                recorder.clear();
                 currentChar.setChar(KEY_NOT_FOUND);
 
                 for(int i=0;i<s.length();i++) deleteLast();
@@ -331,19 +339,17 @@ public class MainActivity extends AppCompatActivity {
                 if(langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN) {
                     Log.e("++++++", candidatesChn.size()+" is the size");
                     if(currCandidateIndex < 0)
-                        s = candidatesChn.get(0).getText();
+                        s = recorder.getDataAsString();
                     else
                         s = candidatesChn.get(currCandidateIndex).getText();
                 }
 
-                appendText(s);
+                recorder.clear();
 
+                appendText(s);
+                speak(s);
                 if(langMode == LANG_ENG) {
-                    textSpeaker.speak(s);
                     appendText(" ");
-                }
-                if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
-                    textSpeaker.speakHint(s);
                 }
                 keyPos.reset();
                 refresh();
@@ -361,7 +367,8 @@ public class MainActivity extends AppCompatActivity {
                         currCandidate = candidatesChn.get(currCandidateIndex).getText();
                     }
                 }
-                textSpeaker.speak(currCandidate);
+                speak(currCandidate);
+                // refreshCandidate(currCandidateIndex);
                 refreshCurrCandidate();
                 break;
             case MotionSeperator.FLING_LEFT:
@@ -373,7 +380,8 @@ public class MainActivity extends AppCompatActivity {
                 else {
                     currCandidate = currCandidateIndex == -1 ? "" : this.candidates.get(currCandidateIndex).getText();
                 }
-                textSpeaker.speak(currCandidate);
+                speak(currCandidate);
+                // refreshCandidate(currCandidateIndex);
                 refreshCurrCandidate();
                 break;
             case MotionSeperator.NORMAL_MOVE:
@@ -395,8 +403,13 @@ public class MainActivity extends AppCompatActivity {
                 refreshCandidate(0);
                 refreshCurrCandidate();
                 debugCandidateView.setText(recorder.getDebugString());
-                if(!candidates.isEmpty() && speakCandidate && timeGap > maxWaitingTimeToSpeakCandidate)
-                    textSpeaker.speak(candidates.get(0).getText());
+                if(!candidates.isEmpty() && speakCandidate && timeGap > maxWaitingTimeToSpeakCandidate) {
+                    if(langMode == LANG_ENG)
+                        textSpeaker.speak(candidates.get(0).getText());
+                    else if(langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN) {
+                        textSpeaker.speakHint(candidatesChn.get(0).getText());
+                    }
+                }
                 break;
         }
     }
