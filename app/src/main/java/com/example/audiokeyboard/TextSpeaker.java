@@ -55,6 +55,7 @@ public class TextSpeaker implements TextToSpeech.OnInitListener{
 
     public void speakHint(String text2speak) {
         this.speak(text2speak+"  "+hanzi2hint.getOrDefault(text2speak, ""));
+        Log.e("::::::::::", text2speak+"  "+hanzi2hint.getOrDefault(text2speak, ""));
     }
 
     public void stop() {

@@ -190,13 +190,14 @@ public class MainActivity extends AppCompatActivity {
             while ((line = reader.readLine()) != null){
                 lineNo++;
                 String[] ss = line.split(" ");
+                if(ss.length == 1) continue;
                 textSpeaker.hanzi2hint.put(ss[0], ss[1]);
                 if (lineNo == DICT_SIZE)
                     break;
             }
             reader.close();
         } catch (Exception e){
-            Log.e("init", "read dict_eng failed");
+            Log.e("init", "read dict_hint failed");
         }
     }
 
@@ -327,7 +328,6 @@ public class MainActivity extends AppCompatActivity {
             case MotionSeperator.FLING_UP:                   // this means word selected
                 String s = recorder.getDataAsString();
                 textSpeaker.stop();
-                recorder.clear();
                 currentChar.setChar(KEY_NOT_FOUND);
 
                 for(int i=0;i<s.length();i++) deleteLast();
@@ -339,10 +339,12 @@ public class MainActivity extends AppCompatActivity {
                 if(langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN) {
                     Log.e("++++++", candidatesChn.size()+" is the size");
                     if(currCandidateIndex < 0)
-                        s = candidatesChn.get(0).getText();
+                        s = recorder.getDataAsString();
                     else
                         s = candidatesChn.get(currCandidateIndex).getText();
                 }
+
+                recorder.clear();
 
                 appendText(s);
                 speak(s);
