@@ -330,16 +330,21 @@ public class MainActivity extends AppCompatActivity {
 
                 if(langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN) {
                     Log.e("++++++", candidatesChn.size()+" is the size");
-                    s = candidatesChn.get(currCandidateIndex + 1).getText();
+                    if(currCandidateIndex < 0)
+                        s = candidatesChn.get(0).getText();
+                    else
+                        s = candidatesChn.get(currCandidateIndex).getText();
                 }
 
                 appendText(s);
 
-                textSpeaker.speak(s);
+                if(langMode == LANG_ENG) {
+                    textSpeaker.speak(s);
+                    appendText(" ");
+                }
                 if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
                     textSpeaker.speakHint(s);
                 }
-                appendText(" ");
                 keyPos.reset();
                 refresh();
                 refreshCandidate(0);
