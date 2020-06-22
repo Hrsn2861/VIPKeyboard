@@ -279,8 +279,8 @@ public class MainActivity extends AppCompatActivity {
                     for(int j=0;j<wordlist.size();j++) {
                         candidatesChn.add(predictor.getWordFromPinyin(wordlist.get(j)));
                     }
-                    if(count_candidate > 5)
-                        break;
+                    // if(count_candidate > 5)
+                    //     break;
                 }
             } catch (RemoteException e) {
                 e.printStackTrace();
@@ -296,10 +296,18 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         candidateView.setText(s);
+        Log.e("------ this is candidate view", s);
     }
     void refreshCandidate(int start) { refreshCandidate(start, 5); }
     void refreshCurrCandidate() {
         currCandidateView.setText(currCandidate);
+    }
+
+    void speak(String text2speak) {
+        if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN)
+            textSpeaker.speakHint(text2speak);
+        else if(langMode == LANG_ENG)
+            textSpeaker.speak(text2speak);
     }
 
     public void processTouchUp(float x, float y) {
@@ -337,13 +345,9 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 appendText(s);
-
+                speak(s);
                 if(langMode == LANG_ENG) {
-                    textSpeaker.speak(s);
                     appendText(" ");
-                }
-                if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
-                    textSpeaker.speakHint(s);
                 }
                 keyPos.reset();
                 refresh();
@@ -361,7 +365,8 @@ public class MainActivity extends AppCompatActivity {
                         currCandidate = candidatesChn.get(currCandidateIndex).getText();
                     }
                 }
-                textSpeaker.speak(currCandidate);
+                speak(currCandidate);
+                // refreshCandidate(currCandidateIndex);
                 refreshCurrCandidate();
                 break;
             case MotionSeperator.FLING_LEFT:
@@ -373,7 +378,8 @@ public class MainActivity extends AppCompatActivity {
                 else {
                     currCandidate = currCandidateIndex == -1 ? "" : this.candidates.get(currCandidateIndex).getText();
                 }
-                textSpeaker.speak(currCandidate);
+                speak(currCandidate);
+                // refreshCandidate(currCandidateIndex);
                 refreshCurrCandidate();
                 break;
             case MotionSeperator.NORMAL_MOVE:
@@ -395,8 +401,13 @@ public class MainActivity extends AppCompatActivity {
                 refreshCandidate(0);
                 refreshCurrCandidate();
                 debugCandidateView.setText(recorder.getDebugString());
-                if(!candidates.isEmpty() && speakCandidate && timeGap > maxWaitingTimeToSpeakCandidate)
-                    textSpeaker.speak(candidates.get(0).getText());
+                if(!candidates.isEmpty() && speakCandidate && timeGap > maxWaitingTimeToSpeakCandidate) {
+                    if(langMode == LANG_ENG)
+                        textSpeaker.speak(candidates.get(0).getText());
+                    else if(langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN) {
+                        textSpeaker.speakHint(candidatesChn.get(0).getText());
+                    }
+                }
                 break;
         }
     }
