@@ -259,6 +259,7 @@ public class MainActivity extends AppCompatActivity {
     private void updateSettings() {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         isDaFirst = sharedPreferences.getBoolean("feedback", true);
+        isFirstCharCertain = sharedPreferences.getBoolean("firstChar", false);
         switch (sharedPreferences.getString("langmode", "eng")) {
             case "quanpin":
                 langMode = LANG_CHN_QUANPIN;
