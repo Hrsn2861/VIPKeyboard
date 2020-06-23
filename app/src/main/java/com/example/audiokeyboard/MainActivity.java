@@ -445,11 +445,13 @@ public class MainActivity extends AppCompatActivity {
                 if(timeGap > minTimeGapThreshold) {               // 说明这个时候是确定的字符
                     recorder.add(currentChar.getChar(), true);
                     Log.e("----------", "this is true");
+                    Log.e("this is the timegap", timeGap+" ");
                     //mediaPlayer.start();
                 }
                 else {
                     recorder.add(currentChar.getChar(), false);
                     Log.e("----------", "this is false");
+                    Log.e("this is the timegap", timeGap+" ");
                 }
                 appendText(currentChar.getChar()+"");
                 refreshCandidate(0);
