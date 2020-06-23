@@ -9,6 +9,7 @@
 - SildeUp：获取当前列表下一个候选词，并且Speak；
 - SlideLeft：SpeakStop()；BackSpace；Speak(removed_char)；
 - SlideDown：获取当前列表 上一个候选词，并且Speak；
+- DoubleSlideDown：清空所有的输入；
 
 
 
@@ -155,6 +156,8 @@ keys：keys为按键数组；
 - skipUpdetect：如果检测到键盘调整，则在抬起的时候不进行判断当前点击位置的字符；
 - currMode：现在是否调整键盘位置；
 - currCandidateIndex：当前候选词的index，如果是-1则不选择候选词；
+- maxChnCandidateLength：获取最多的中文候选词长度；如果长度不剪则会出现卡顿；
+- isFirstCharCertain：所有输入的第一个字符是不是确认的；
 
 #### 相关函数设置
 
@@ -162,3 +165,8 @@ keys：keys为按键数组；
 - deleteLast：删除输入框和recorder的最后的字符；
 - refresh，refreshCandidate，refreshCurrCandidate：刷新键盘布局，刷新当前候选词泪飙，刷新当前候选词；
 
+
+
+## 待解决问题
+
+1. 现在需要搞定，如何对于中文的候选词进行排序；肯定是拼音和汉字混合排序，但是如何进行插入以及如何计算是一个问题；

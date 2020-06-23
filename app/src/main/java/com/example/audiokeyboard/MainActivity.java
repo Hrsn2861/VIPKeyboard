@@ -55,6 +55,8 @@ public class MainActivity extends AppCompatActivity {
 
     int currMode;
 
+    boolean isFirstCharCertain = true;
+
     int langMode = 1;
     final int LANG_ENG = 0;
     final int LANG_CHN_QUANPIN = 1;
@@ -442,16 +444,12 @@ public class MainActivity extends AppCompatActivity {
                     currentChar.setChar(keyPos.getKeyByPosition(x, y, currMode, getkey_mode));
                 if(currentChar.getChar() == KEY_NOT_FOUND) break;
                 if(currentChar.getChar() > 'z' || currentChar.getChar() < 'a') break;
-                if(timeGap > minTimeGapThreshold) {               // 说明这个时候是确定的字符
+                if(timeGap > minTimeGapThreshold || ((recorder.getDataLength() == 0) && isFirstCharCertain)) {               // 说明这个时候是确定的字符
                     recorder.add(currentChar.getChar(), true);
-                    Log.e("----------", "this is true");
-                    Log.e("this is the timegap", timeGap+" ");
                     //mediaPlayer.start();
                 }
                 else {
                     recorder.add(currentChar.getChar(), false);
-                    Log.e("----------", "this is false");
-                    Log.e("this is the timegap", timeGap+" ");
                 }
                 appendText(currentChar.getChar()+"");
                 refreshCandidate(0);
