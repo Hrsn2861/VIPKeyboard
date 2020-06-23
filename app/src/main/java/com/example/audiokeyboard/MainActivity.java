@@ -348,7 +348,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         candidateView.setText(s);
-        Log.e("------ this is candidate view", s);
     }
     void refreshCandidate(int start) { refreshCandidate(start, 5); }
     void refreshCurrCandidate() {
@@ -445,10 +444,12 @@ public class MainActivity extends AppCompatActivity {
                 if(currentChar.getChar() > 'z' || currentChar.getChar() < 'a') break;
                 if(timeGap > minTimeGapThreshold) {               // 说明这个时候是确定的字符
                     recorder.add(currentChar.getChar(), true);
+                    Log.e("----------", "this is true");
                     //mediaPlayer.start();
                 }
                 else {
                     recorder.add(currentChar.getChar(), false);
+                    Log.e("----------", "this is false");
                 }
                 appendText(currentChar.getChar()+"");
                 refreshCandidate(0);
@@ -508,6 +509,7 @@ public class MainActivity extends AppCompatActivity {
             if (ch == KEY_NOT_FOUND) return;
             currentChar.setChar(ch);
             textSpeaker.speak(currentChar.getChar() + "");
+            Log.e("speak is here", "--------------------");
             currMoveCharacter = ch;//?
         }
     }

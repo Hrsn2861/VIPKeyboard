@@ -242,6 +242,7 @@ public class Predictor {
                 else {                                                          // 如果字符不确定，需要计算
                     bufWord.freq *= calDiffChar(bufWord.getText().charAt(j), data.charAt(j));
                 }
+                bufWord.freq *= Math.exp(-Math.abs(bufWord.getText().length() - data.length()));
             }
             if(flag) ret.add(bufWord);
         }
