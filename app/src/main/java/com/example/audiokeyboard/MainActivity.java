@@ -29,12 +29,17 @@ import com.example.audiokeyboard.Utils.KeyPos;
 import com.example.audiokeyboard.Utils.Letter;
 import com.example.audiokeyboard.Utils.MotionPoint;
 import com.example.audiokeyboard.Utils.MotionSeperator;
+import com.example.audiokeyboard.Utils.PinyinCandidate;
+import com.example.audiokeyboard.Utils.PinyinCandidateList;
 import com.example.audiokeyboard.Utils.Word;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+
+import javax.crypto.Mac;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -61,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
     final int LANG_ENG = 0;
     final int LANG_CHN_QUANPIN = 1;
     final int LANG_CHN_JIANPIN = 2;
-    final int maxChnCandidateLength = 100;
+    final int maxChnCandidateLength = 50;
 
     final float voiceSpeed = 10f;
     final long maxWaitingTimeToSpeakCandidate = 800;
@@ -82,7 +87,6 @@ public class MainActivity extends AppCompatActivity {
     TextView currCandidateView;
     TextView debugCandidateView;
     ArrayList<Word> candidates;
-    ArrayList<Word> candidatesChn;
 
     // record the edge pointer moved along
     boolean isTowFingerMotion = false;
@@ -95,8 +99,12 @@ public class MainActivity extends AppCompatActivity {
     char currMoveCharacter = KEY_NOT_FOUND;
 
     final int DICT_SIZE = 50000;
-    int currCandidateIndex = 0;
+    int currCandidateIndex = 0;                                 // pinyin: total index;
     String currCandidate;
+
+    PinyinCandidateList pinyinCandidateList;
+    PinyinCandidate currCandidateChn;
+    String currHanziAndPinyin;
 
     Predictor predictor;
 
@@ -117,6 +125,10 @@ public class MainActivity extends AppCompatActivity {
 
     void defaultParams() {
         currMode = Key.MODE_VIP;
+    }
+
+    void write(String s) {
+        Log.e("-----------", s);
     }
 
     void initTts() {
@@ -142,10 +154,11 @@ public class MainActivity extends AppCompatActivity {
         initPredictor();
         initDict();
         this.candidates = new ArrayList<>();
-        this.candidatesChn = new ArrayList<>();
         mediaPlayer = MediaPlayer.create(this, R.raw.ios11_da);
         // PINYIN related
         // langMode = LANG_CHN_QUANPIN;
+        pinyinCandidateList = new PinyinCandidateList();
+        currCandidateChn = new PinyinCandidate();
     }
 
     void initPredictor() {
@@ -166,9 +179,8 @@ public class MainActivity extends AppCompatActivity {
                     break;
             }
             reader.close();
-            Log.e("init", "read dict finished " + predictor.dictEng.size());
         } catch (Exception e){
-            Log.e("init", "read dict failed");
+            e.printStackTrace();
         }
         return ret;
     }
@@ -193,7 +205,7 @@ public class MainActivity extends AppCompatActivity {
             }
             reader.close();
         } catch (Exception e){
-            Log.e("init", "read dict_eng failed");
+            e.printStackTrace();
         }
 
         reader = new BufferedReader(new InputStreamReader((getResources().openRawResource(R.raw.dict_chn_hint))));
@@ -209,7 +221,7 @@ public class MainActivity extends AppCompatActivity {
             }
             reader.close();
         } catch (Exception e){
-            Log.e("init", "read dict_hint failed");
+            e.printStackTrace();
         }
     }
 
@@ -293,6 +305,9 @@ public class MainActivity extends AppCompatActivity {
 
     void appendText(String s) {
         inputText = inputText+s;
+        if(langMode == LANG_ENG) {
+            inputText += " ";
+        }
         this.textView.setText(inputText);
     }
     void clearText() {
@@ -316,41 +331,59 @@ public class MainActivity extends AppCompatActivity {
         String s = "";
         // this.candidates = predictor.getCandidate(recorder);
         this.candidates = predictor.getVIPCandidate(recorder, currPoint.getX(), currPoint.getY(), langMode);
-
         int end = Math.min(start+length, candidates.size());
 
-        candidatesChn.clear();
         if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
-            int count_candidate = 0;
+            pinyinCandidateList.clear();
             try {
-                for(int i=0;i<candidates.size();i++) {
-                    if(candidates.get(i).getText().length() > recorder.getDataLength())
-                        continue;
-                    count_candidate++;
-                    byte[] bytes = candidates.get(i).getText().getBytes();
-                    int strlen = candidates.get(i).getText().length();
-                    int listlen = mIPinyinDecoderService.imSearch(bytes, strlen);
-                    List<String> wordlist = mIPinyinDecoderService.imGetChoiceList(0, listlen, mIPinyinDecoderService.imGetFixedLen());
-                    for(int j=0;j<wordlist.size();j++) {
-                        candidatesChn.add(predictor.getWordFromPinyin(wordlist.get(j)));
+                if (mIPinyinDecoderService.imGetFixedLen() == 0) {                              // 如果要重新选择候选词;
+                    int countCandidate = 0;
+                    for (int i = 0; i < candidates.size(); i++) {
+                        if (candidates.get(i).getText().length() > recorder.getDataLength())
+                            continue;
+                        countCandidate++;
+                        byte[] bytes = candidates.get(i).getText().getBytes();
+                        String str = candidates.get(i).getText();
+                        int strlen = str.length();
+                        int listlen = mIPinyinDecoderService.imSearch(bytes, strlen);
+                        List<String> wordlist = mIPinyinDecoderService.imGetChoiceList(0, listlen, mIPinyinDecoderService.imGetFixedLen());
+                        for (int j = 0; j < wordlist.size(); j++) {
+                            pinyinCandidateList.add(j, i, countCandidate, str, wordlist.get(j));
+                        }
+                        if (countCandidate > maxChnCandidateLength)
+                            break;
                     }
-                    if(count_candidate > maxChnCandidateLength)
-                        break;
+                    end = Math.min(pinyinCandidateList.size(), end);
+                    for (int i = start; i < end; i++) {
+                        s = s.concat(pinyinCandidateList.getHanzi(i) + "\n");
+                    }
+                }
+                else {
+                    List<String> wordlist = mIPinyinDecoderService.imGetChoiceList(start, length, mIPinyinDecoderService.imGetFixedLen());
+                    for(int i=0;i<wordlist.size();i++) {
+                        pinyinCandidateList.add(currCandidateChn.getChoiceIndex(),
+                                currCandidateChn.getPinyinCandidateIndex(),
+                                currCandidateChn.getTotalIndex(),
+                                currCandidateChn.getPinyin(),
+                                wordlist.get(i));
+                    }
+                    for(int i=0;i<wordlist.size();i++) {
+                        s = s.concat(wordlist.get(i) + "\n");
+                    }
                 }
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
-            end = Math.min(start+length, candidatesChn.size());
+            candidateView.setText(s);
         }
 
-        for(int i=start;i<end;i++) {
-            if(langMode == LANG_ENG)
+        else if(langMode == LANG_ENG) {
+            for(int i=start;i<end;i++) {
                 s = s.concat(candidates.get(i).getText() + "\n");
-            else {
-                s = s.concat(candidatesChn.get(i).getText() + "\n");
             }
+            candidateView.setText(s);
         }
-        candidateView.setText(s);
+
     }
     void refreshCandidate(int start) { refreshCandidate(start, 5); }
     void refreshCurrCandidate() {
@@ -379,31 +412,56 @@ public class MainActivity extends AppCompatActivity {
                 refreshCandidate(0);
                 break;
             case MotionSeperator.FLING_UP:                   // this means word selected
-                String s = recorder.getDataAsString();
+                String s = "";
                 textSpeaker.stop();
                 currentChar.setChar(KEY_NOT_FOUND);
 
-                for(int i=0;i<s.length();i++) deleteLast();
-
-                if(currCandidateIndex != -1) {
-                    s = currCandidate;
-                }
-
                 if(langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN) {
-                    Log.e("++++++", candidatesChn.size()+" is the size");
-                    if(currCandidateIndex < 0)
-                        s = recorder.getDataAsString();
-                    else
-                        s = candidatesChn.get(currCandidateIndex).getText();
+                    s = currHanziAndPinyin;
+                    Log.e("current candidate", currCandidate);
+                    Log.e("current candidate chn", currCandidateChn.getHanzi());
+                    try {
+                        int temp;
+                        String curr = currCandidateChn.getPinyin();
+                        if(mIPinyinDecoderService.imGetFixedLen() == 0)                                 // 如果没有确定的那么刷新；
+                            mIPinyinDecoderService.imSearch(curr.getBytes(), curr.length());
+                        temp = mIPinyinDecoderService.imChoose(currCandidateChn.getChoiceIndex());
+
+                        if(temp == 1) {
+                            int removeLength = recorder.getDataLength() - mIPinyinDecoderService.imGetFixedLen();
+                            for(int i=0;i<removeLength;i++) deleteLast();
+
+                            s = currCandidateChn.getHanzi();
+                            mIPinyinDecoderService.imResetSearch();
+                            recorder.clear();
+                        }
+                        else {
+                            for(int i=0;i<currHanziAndPinyin.length();i++) deleteLast();
+
+                            String buffer = mIPinyinDecoderService.imGetChoice(0);
+                            s = buffer.substring(0, mIPinyinDecoderService.imGetFixedLen());
+                            s += recorder.getDataAsString().substring(mIPinyinDecoderService.imGetSplStart()[mIPinyinDecoderService.imGetFixedLen()+1]);
+                            currHanziAndPinyin = s;
+                            currCandidateIndex = -1;
+                            currCandidateChn.setHanzi(buffer.substring(mIPinyinDecoderService.imGetFixedLen()));
+                            currCandidateChn.setPinyin("");
+                        }
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
                 }
 
-                recorder.clear();
+                else if(langMode == LANG_ENG) {
+                    s = recorder.getDataAsString();
+                    for(int i=0;i<s.length();i++) deleteLast();
+                    if(currCandidateIndex != -1) {
+                        s = currCandidate;
+                    }
+                    recorder.clear();
+                }
 
                 appendText(s);
                 speak(s);
-                if(langMode == LANG_ENG) {
-                    appendText(" ");
-                }
                 keyPos.reset();
                 refresh();
                 refreshCandidate(0);
@@ -411,30 +469,58 @@ public class MainActivity extends AppCompatActivity {
             case MotionSeperator.FLING_RIGHT:
                 textSpeaker.stop();
                 currCandidateIndex = Math.min(currCandidateIndex+1, this.candidates.size()-1);
-                if(this.candidates.isEmpty()) {
-                    currCandidate = "no candidate";
-                }
-                else {
-                    currCandidate = this.candidates.get(currCandidateIndex).getText();
-                    if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
-                        currCandidate = candidatesChn.get(currCandidateIndex).getText();
+
+                if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
+                    if(this.candidates.isEmpty() || this.pinyinCandidateList.size() == 0) {
+                        currCandidate = "no candidate";
+                        currCandidateChn = new PinyinCandidate(0, 0, 0, "", "");
                     }
+                    else {
+                        currCandidate = this.pinyinCandidateList.getHanzi(currCandidateIndex);
+                        currCandidateChn = this.pinyinCandidateList.get(currCandidateIndex);
+                    }
+                    speak(currCandidateChn.getHanzi());
                 }
-                speak(currCandidate);
-                // refreshCandidate(currCandidateIndex);
+
+                else if(langMode == LANG_ENG) {
+                    if(this.candidates.isEmpty())
+                        currCandidate = "no candidate";
+                    else
+                        currCandidate = this.candidates.get(currCandidateIndex).getText();
+                    speak(currCandidate);
+                }
+
+                refreshCandidate(Math.max(0, currCandidateIndex));
                 refreshCurrCandidate();
                 break;
             case MotionSeperator.FLING_LEFT:
                 textSpeaker.stop();
                 currCandidateIndex = currCandidateIndex == 0 ? -1 : Math.max(currCandidateIndex-1, 0);
-                if(candidates.isEmpty()) {
-                    currCandidate = "no candidate";
+
+                if(langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN) {
+                    if(this.candidates.isEmpty() || this.pinyinCandidateList.size() == 0) {
+                        currCandidate = "no candidate";
+                        currCandidateChn = new PinyinCandidate(0, 0, 0, "", "");
+                    }
+                    else if(currCandidateIndex == -1) {
+                        currCandidate = recorder.getDataAsString();
+                        currCandidateChn = new PinyinCandidate(0, 0, 0, "", "");
+                    }
+                    else {
+                        currCandidate = this.pinyinCandidateList.getHanzi(currCandidateIndex);
+                        currCandidateChn = this.pinyinCandidateList.get(currCandidateIndex);
+                    }
+                    speak(currCandidateChn.getHanzi());
                 }
-                else {
-                    currCandidate = currCandidateIndex == -1 ? "" : this.candidates.get(currCandidateIndex).getText();
+
+                else if(langMode == LANG_ENG) {
+                    if (candidates.isEmpty())
+                        currCandidate = "no candidate";
+                    else
+                        currCandidate = currCandidateIndex == -1 ? recorder.getDataAsString() : this.candidates.get(currCandidateIndex).getText();
+                    speak(currCandidate);
                 }
-                speak(currCandidate);
-                // refreshCandidate(currCandidateIndex);
+                refreshCandidate(Math.max(0, currCandidateIndex));
                 refreshCurrCandidate();
                 break;
             case MotionSeperator.NORMAL_MOVE:
@@ -457,12 +543,9 @@ public class MainActivity extends AppCompatActivity {
                 refreshCurrCandidate();
                 debugCandidateView.setText(recorder.getDebugString());
                 if(!candidates.isEmpty() && speakCandidate && timeGap > maxWaitingTimeToSpeakCandidate) {
-                    if(langMode == LANG_ENG)
-                        textSpeaker.speak(candidates.get(0).getText());
-                    else if(langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN) {
-                        textSpeaker.speakHint(candidatesChn.get(0).getText());
-                    }
+                    textSpeaker.speak(candidates.get(0).getText());
                 }
+                currHanziAndPinyin = recorder.getDataAsString();
                 break;
         }
     }
@@ -510,7 +593,6 @@ public class MainActivity extends AppCompatActivity {
             if (ch == KEY_NOT_FOUND) return;
             currentChar.setChar(ch);
             textSpeaker.speak(currentChar.getChar() + "");
-            Log.e("speak is here", "--------------------");
             currMoveCharacter = ch;//?
         }
     }
@@ -556,7 +638,6 @@ public class MainActivity extends AppCompatActivity {
         int motionType = MotionSeperator.getMotionType(startPoint, secondStartPoint, endPoint, secondEndPoint);
         switch(motionType) {
             case MotionSeperator.DOUBLE_FLING_DOWN:
-                // Log.e("+++++++++++", "this is a double fling down");
                 recorder.clear();
                 clearText();
                 currentChar.setChar(KEY_NOT_FOUND);

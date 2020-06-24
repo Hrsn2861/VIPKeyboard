@@ -163,7 +163,7 @@ keys：keys为按键数组；
 
 - appendText：当前输入框内加入内容；
 - deleteLast：删除输入框和recorder的最后的字符；
-- refresh，refreshCandidate，refreshCurrCandidate：刷新键盘布局，刷新当前候选词泪飙，刷新当前候选词；
+- refresh，refreshCandidate，refreshCurrCandidate：刷新键盘布局，刷新当前候选词列表，刷新当前候选词；
 
 
 
