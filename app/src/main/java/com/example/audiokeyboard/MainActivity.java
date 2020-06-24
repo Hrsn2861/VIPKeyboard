@@ -104,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
 
     PinyinCandidateList pinyinCandidateList;
     PinyinCandidate currCandidateChn;
-    String currHanziAndPinyin;
+    String currHanziAndPinyin = "";
 
     Predictor predictor;
 
@@ -359,7 +359,8 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 else {
-                    List<String> wordlist = mIPinyinDecoderService.imGetChoiceList(start, length, mIPinyinDecoderService.imGetFixedLen());
+                    List<String> wordlist = mIPinyinDecoderService.imGetChoiceList(0, 100, mIPinyinDecoderService.imGetFixedLen());
+                    end = Math.min(wordlist.size(), end);
                     for(int i=0;i<wordlist.size();i++) {
                         pinyinCandidateList.add(currCandidateChn.getChoiceIndex(),
                                 currCandidateChn.getPinyinCandidateIndex(),
@@ -367,7 +368,7 @@ public class MainActivity extends AppCompatActivity {
                                 currCandidateChn.getPinyin(),
                                 wordlist.get(i));
                     }
-                    for(int i=0;i<wordlist.size();i++) {
+                    for(int i=start;i<end;i++) {
                         s = s.concat(wordlist.get(i) + "\n");
                     }
                 }
@@ -395,6 +396,16 @@ public class MainActivity extends AppCompatActivity {
             textSpeaker.speakHint(text2speak);
         else if(langMode == LANG_ENG)
             textSpeaker.speak(text2speak);
+    }
+
+    public int getRemainPinyinLength(String s) {
+        int ret = 0;
+        for(int i=s.length()-1;i>=0;i--) {
+            if(s.charAt(i) <'a' || s.charAt(i) > 'z')
+                break;
+            ret++;
+        }
+        return ret;
     }
 
     public void processTouchUp(float x, float y) {
@@ -425,20 +436,26 @@ public class MainActivity extends AppCompatActivity {
                         String curr = currCandidateChn.getPinyin();
                         if(mIPinyinDecoderService.imGetFixedLen() == 0)                                 // 如果没有确定的那么刷新；
                             mIPinyinDecoderService.imSearch(curr.getBytes(), curr.length());
-                        temp = mIPinyinDecoderService.imChoose(currCandidateChn.getChoiceIndex());
+                        if(currCandidateIndex == -1)
+                            temp = mIPinyinDecoderService.imChoose(0);
+                        else
+                            temp = mIPinyinDecoderService.imChoose(currCandidateIndex);
 
                         if(temp == 1) {
-                            int removeLength = recorder.getDataLength() - mIPinyinDecoderService.imGetFixedLen();
+                            int removeLength = getRemainPinyinLength(currHanziAndPinyin);
                             for(int i=0;i<removeLength;i++) deleteLast();
 
                             s = currCandidateChn.getHanzi();
                             mIPinyinDecoderService.imResetSearch();
                             recorder.clear();
+                            currHanziAndPinyin = "";
                         }
                         else {
+                            if (currHanziAndPinyin.length() == 0) currHanziAndPinyin = recorder.getDataAsString();
                             for(int i=0;i<currHanziAndPinyin.length();i++) deleteLast();
 
                             String buffer = mIPinyinDecoderService.imGetChoice(0);
+                            Log.e("buffer", buffer);
                             s = buffer.substring(0, mIPinyinDecoderService.imGetFixedLen());
                             s += recorder.getDataAsString().substring(mIPinyinDecoderService.imGetSplStart()[mIPinyinDecoderService.imGetFixedLen()+1]);
                             currHanziAndPinyin = s;
@@ -545,7 +562,6 @@ public class MainActivity extends AppCompatActivity {
                 if(!candidates.isEmpty() && speakCandidate && timeGap > maxWaitingTimeToSpeakCandidate) {
                     textSpeaker.speak(candidates.get(0).getText());
                 }
-                currHanziAndPinyin = recorder.getDataAsString();
                 break;
         }
     }
