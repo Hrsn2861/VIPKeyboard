@@ -415,8 +415,36 @@ public class MainActivity extends AppCompatActivity {
         long timeGap = startPoint.getTimeBetween(endPoint);
         switch (moveType) {
             case MotionSeperator.FLING_DOWN:                    // this means backspace
-                recorder.removeLast();
-                textSpeaker.speak(deleteLast() + "已删除");
+
+                if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
+                    try {
+                        if (mIPinyinDecoderService.imGetFixedLen() == 0) {
+                            recorder.removeLast();
+                            textSpeaker.speak(deleteLast() + "已删除");
+                        }
+                        else {
+                            mIPinyinDecoderService.imCancelLastChoice();
+                            String buf = currHanziAndPinyin.substring(0, mIPinyinDecoderService.imGetFixedLen());
+                            for(int i=0;i<currHanziAndPinyin.length();i++) deleteLast();
+                            write(buf+" "+currHanziAndPinyin);
+                            buf += recorder.getDataAsString().substring(mIPinyinDecoderService.imGetSplStart()[mIPinyinDecoderService.imGetFixedLen()+1]);
+                            write(buf);
+                            currHanziAndPinyin = buf;
+                            appendText(buf);
+                            currCandidateChn.setPinyin(recorder.getDataAsString());
+                            currCandidateChn.setHanzi(mIPinyinDecoderService.imGetChoice(0));
+                            currCandidateIndex = -1;
+                        }
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                else if(langMode == LANG_ENG) {
+                    recorder.removeLast();
+                    textSpeaker.speak(deleteLast() + "已删除");
+                }
+
                 currentChar.setChar(KEY_NOT_FOUND);
                 keyPos.reset();
                 refresh();
@@ -429,11 +457,12 @@ public class MainActivity extends AppCompatActivity {
 
                 if(langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN) {
                     s = currHanziAndPinyin;
-                    Log.e("current candidate", currCandidate);
-                    Log.e("current candidate chn", currCandidateChn.getHanzi());
+                    // Log.e("current candidate", currCandidate);
+                    // Log.e("current candidate chn", currCandidateChn.getHanzi());
                     try {
                         int temp;
-                        String curr = currCandidateChn.getPinyin();
+                        String curr = recorder.getDataAsString();
+                        int fixedLen = mIPinyinDecoderService.imGetFixedLen();
                         if(mIPinyinDecoderService.imGetFixedLen() == 0)                                 // 如果没有确定的那么刷新；
                             mIPinyinDecoderService.imSearch(curr.getBytes(), curr.length());
                         if(currCandidateIndex == -1)
@@ -441,11 +470,13 @@ public class MainActivity extends AppCompatActivity {
                         else
                             temp = mIPinyinDecoderService.imChoose(currCandidateIndex);
 
-                        if(temp == 1) {
-                            int removeLength = getRemainPinyinLength(currHanziAndPinyin);
+                        if(temp == 1) {                 // 最后一个拼音
+                            // int removeLength = getRemainPinyinLength(currHanziAndPinyin);
+                            int removeLength = currHanziAndPinyin.length() - fixedLen;
                             for(int i=0;i<removeLength;i++) deleteLast();
 
                             s = currCandidateChn.getHanzi();
+                            Log.e("++++++++++", s);
                             mIPinyinDecoderService.imResetSearch();
                             recorder.clear();
                             currHanziAndPinyin = "";
@@ -455,10 +486,11 @@ public class MainActivity extends AppCompatActivity {
                             for(int i=0;i<currHanziAndPinyin.length();i++) deleteLast();
 
                             String buffer = mIPinyinDecoderService.imGetChoice(0);
-                            Log.e("buffer", buffer);
+
                             s = buffer.substring(0, mIPinyinDecoderService.imGetFixedLen());
                             s += recorder.getDataAsString().substring(mIPinyinDecoderService.imGetSplStart()[mIPinyinDecoderService.imGetFixedLen()+1]);
                             currHanziAndPinyin = s;
+
                             currCandidateIndex = -1;
                             currCandidateChn.setHanzi(buffer.substring(mIPinyinDecoderService.imGetFixedLen()));
                             currCandidateChn.setPinyin("");
