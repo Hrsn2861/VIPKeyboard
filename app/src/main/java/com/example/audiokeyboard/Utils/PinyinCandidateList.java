@@ -44,11 +44,21 @@ public class PinyinCandidateList {
     }
 
     public String getHanzi(int index) {
-        return pinyinCandidates.get(index).getHanzi();
+        try {
+            return pinyinCandidates.get(index).getHanzi();
+        } catch(Exception e) {
+            e.printStackTrace();
+            return "out of bounds";
+        }
     }
 
     public PinyinCandidate get(int index) {
-        return pinyinCandidates.get(index);
+        try {
+            return pinyinCandidates.get(index);
+        } catch(Exception e) {
+            e.printStackTrace();
+            return new PinyinCandidate(0, 0, 0, "", "");
+        }
     }
 
     public int size() {

@@ -105,6 +105,9 @@ public class MainActivity extends AppCompatActivity {
     PinyinCandidateList pinyinCandidateList;
     PinyinCandidate currCandidateChn;
     String currHanziAndPinyin = "";
+    boolean predictNextWord = true;                                    // 在输入完是否预测下一个汉字
+    boolean predictSwitch = false;
+    String predictString = "";
 
     Predictor predictor;
 
@@ -324,13 +327,58 @@ public class MainActivity extends AppCompatActivity {
         this.textView.setText(inputText);
         return ch+"";
     }
-    void refresh() {
+    void refreshKeyPos() {
         this.keyboardView.setKeysAndRefresh(keyPos.keys);
     }
     void refreshCandidate(int start, int length) {
         String s = "";
         // this.candidates = predictor.getCandidate(recorder);
-        this.candidates = predictor.getVIPCandidate(recorder, currPoint.getX(), currPoint.getY(), langMode);
+        if(predictSwitch) {                                         // 通过中文预测中文
+            try {
+                Log.e("this is the predictString put in service", predictString+" not empty");
+                int len = mIPinyinDecoderService.imGetPredictsNum(predictString);
+                Log.e("this is the predictList length", len+"");
+                this.candidates.clear();
+                List<String> predictList = mIPinyinDecoderService.imGetPredictList(0, len);
+
+                if(predictList.size() == 0) {
+                    String p;
+                    if(predictString.length() == 0) {
+                        if(inputText.length() == 0) p = "";
+                        else p = inputText.substring(inputText.length()-1);
+                    }
+                    else {
+                        p = predictString.charAt(predictString.length()-1)+"";
+                    }
+                    len = mIPinyinDecoderService.imGetPredictsNum(p);
+                    predictList = mIPinyinDecoderService.imGetPredictList(0, len);
+                }
+
+                pinyinCandidateList.clear();
+
+                for(int i=0;i<predictList.size();i++) {
+                    pinyinCandidateList.add(
+                            0,
+                            0,
+                            0,
+                            "empty",
+                            predictList.get(i));
+                }
+
+                int end = Math.min(start+length, predictList.size());
+                for(int i=start;i<end;i++) {
+                    s = s.concat(predictList.get(i)+"\n");
+                }
+                candidateView.setText(s);
+                currCandidate = pinyinCandidateList.getHanzi(currCandidateIndex);
+                currCandidateChn = pinyinCandidateList.get(currCandidateIndex);
+            } catch(RemoteException e) {
+                e.printStackTrace();
+            }
+            return;
+        }
+        else
+            this.candidates = predictor.getVIPCandidate(recorder, currPoint.getX(), currPoint.getY(), langMode);
         int end = Math.min(start+length, candidates.size());
 
         if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
@@ -419,16 +467,26 @@ public class MainActivity extends AppCompatActivity {
                 if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
                     try {
                         if (mIPinyinDecoderService.imGetFixedLen() == 0) {
+                            if(predictString.length() != 0)
+                                predictString = predictString.substring(0, predictString.length()-1);
+                            if(predictNextWord) {
+                                char c = inputText.charAt(inputText.length()-1);
+                                if(c < 'a' || c > 'z') {
+                                    predictSwitch = true;
+                                    currCandidateIndex = 0;
+                                }
+                            }
+
                             recorder.removeLast();
                             textSpeaker.speak(deleteLast() + "已删除");
                         }
                         else {
+                            predictSwitch = false;
+
                             mIPinyinDecoderService.imCancelLastChoice();
                             String buf = currHanziAndPinyin.substring(0, mIPinyinDecoderService.imGetFixedLen());
                             for(int i=0;i<currHanziAndPinyin.length();i++) deleteLast();
-                            write(buf+" "+currHanziAndPinyin);
                             buf += recorder.getDataAsString().substring(mIPinyinDecoderService.imGetSplStart()[mIPinyinDecoderService.imGetFixedLen()+1]);
-                            write(buf);
                             currHanziAndPinyin = buf;
                             appendText(buf);
                             currCandidateChn.setPinyin(recorder.getDataAsString());
@@ -447,7 +505,7 @@ public class MainActivity extends AppCompatActivity {
 
                 currentChar.setChar(KEY_NOT_FOUND);
                 keyPos.reset();
-                refresh();
+                refreshKeyPos();
                 refreshCandidate(0);
                 break;
             case MotionSeperator.FLING_UP:                   // this means word selected
@@ -455,15 +513,15 @@ public class MainActivity extends AppCompatActivity {
                 textSpeaker.stop();
                 currentChar.setChar(KEY_NOT_FOUND);
 
-                if(langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN) {
+
+                if((langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN) && !predictSwitch) {
                     s = currHanziAndPinyin;
-                    // Log.e("current candidate", currCandidate);
-                    // Log.e("current candidate chn", currCandidateChn.getHanzi());
+
                     try {
                         int temp;
                         String curr = recorder.getDataAsString();
                         int fixedLen = mIPinyinDecoderService.imGetFixedLen();
-                        if(mIPinyinDecoderService.imGetFixedLen() == 0)                                 // 如果没有确定的那么刷新；
+                        if(mIPinyinDecoderService.imGetFixedLen() == 0)                                 // 如果没有字符是确定的；
                             mIPinyinDecoderService.imSearch(curr.getBytes(), curr.length());
                         if(currCandidateIndex == -1)
                             temp = mIPinyinDecoderService.imChoose(0);
@@ -471,17 +529,29 @@ public class MainActivity extends AppCompatActivity {
                             temp = mIPinyinDecoderService.imChoose(currCandidateIndex);
 
                         if(temp == 1) {                 // 最后一个拼音
+                            if(predictNextWord) {
+                                predictSwitch = true;
+                                currCandidateIndex = 0;
+                            }
+
                             // int removeLength = getRemainPinyinLength(currHanziAndPinyin);
                             int removeLength = currHanziAndPinyin.length() - fixedLen;
+                            if(currHanziAndPinyin.equals("")) removeLength = recorder.getDataLength();
                             for(int i=0;i<removeLength;i++) deleteLast();
 
+                            if(!currHanziAndPinyin.equals(""))
+                                currHanziAndPinyin = currHanziAndPinyin.substring(0, currHanziAndPinyin.length()-removeLength);
+                            currHanziAndPinyin += currCandidateChn.getHanzi();
+                            predictString = currCandidateChn.getHanzi();
+
                             s = currCandidateChn.getHanzi();
-                            Log.e("++++++++++", s);
                             mIPinyinDecoderService.imResetSearch();
                             recorder.clear();
                             currHanziAndPinyin = "";
                         }
                         else {
+                            predictSwitch = false;
+
                             if (currHanziAndPinyin.length() == 0) currHanziAndPinyin = recorder.getDataAsString();
                             for(int i=0;i<currHanziAndPinyin.length();i++) deleteLast();
 
@@ -509,15 +579,27 @@ public class MainActivity extends AppCompatActivity {
                     recorder.clear();
                 }
 
+                if(predictSwitch) {
+                    s = currCandidateChn.getHanzi();
+                    predictString = s;
+                }
+
                 appendText(s);
                 speak(s);
                 keyPos.reset();
-                refresh();
+                refreshKeyPos();
                 refreshCandidate(0);
+                refreshCurrCandidate();
                 break;
             case MotionSeperator.FLING_RIGHT:
                 textSpeaker.stop();
-                currCandidateIndex = Math.min(currCandidateIndex+1, this.candidates.size()-1);
+                if(langMode == LANG_ENG)
+                    currCandidateIndex = Math.min(currCandidateIndex+1, this.candidates.size()-1);
+                else if(langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN)
+                    currCandidateIndex = Math.min(currCandidateIndex+1, this.pinyinCandidateList.size()-1);
+                currCandidateIndex = Math.max(currCandidateIndex, 0);
+
+                Log.e("this is index after fling right", currCandidateIndex+"");
 
                 if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
                     if(this.candidates.isEmpty() || this.pinyinCandidateList.size() == 0) {
@@ -528,6 +610,12 @@ public class MainActivity extends AppCompatActivity {
                         currCandidate = this.pinyinCandidateList.getHanzi(currCandidateIndex);
                         currCandidateChn = this.pinyinCandidateList.get(currCandidateIndex);
                     }
+
+                    if(predictSwitch) {
+                        currCandidate = this.pinyinCandidateList.getHanzi(currCandidateIndex);
+                        currCandidateChn = this.pinyinCandidateList.get(currCandidateIndex);
+                    }
+
                     speak(currCandidateChn.getHanzi());
                 }
 
@@ -559,6 +647,12 @@ public class MainActivity extends AppCompatActivity {
                         currCandidate = this.pinyinCandidateList.getHanzi(currCandidateIndex);
                         currCandidateChn = this.pinyinCandidateList.get(currCandidateIndex);
                     }
+
+                    if(predictSwitch) {
+                        currCandidate  =this.pinyinCandidateList.getHanzi(currCandidateIndex);
+                        currCandidateChn = this.pinyinCandidateList.get(currCandidateIndex);
+                    }
+
                     speak(currCandidateChn.getHanzi());
                 }
 
@@ -574,6 +668,8 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case MotionSeperator.NORMAL_MOVE:
             default:
+                predictSwitch = false;
+
                 currCandidateIndex = -1;
                 currCandidate = "";
                 if(!skipUpDetect || startPoint.getDistance(endPoint) > minMoveDistToCancelBestChar)                         // 如果这里面不要跳过或者移动距离超了才会进行更新currentchar，否则会直接利用touchdown时候的字符；
@@ -611,7 +707,7 @@ public class MainActivity extends AppCompatActivity {
             if (keyPos.shift(mostPossible, x, y)) {
                 ch = mostPossible;
                 skipUpDetect = true;
-                refresh();
+                refreshKeyPos();
             }    // 如果设置的话
             else {
                 ch = keyPos.getKeyByPosition(x, y, currMode, getkey_mode);
@@ -632,7 +728,7 @@ public class MainActivity extends AppCompatActivity {
             if (keyPos.shift(mostPossible, x, y)) {
                 ch = mostPossible;
                 skipUpDetect = true;
-                refresh();
+                refreshKeyPos();
             }    // 如果设置的话
             else {
                 ch = keyPos.getKeyByPosition(x, y, currMode, getkey_mode);
@@ -691,7 +787,7 @@ public class MainActivity extends AppCompatActivity {
                 currentChar.setChar(KEY_NOT_FOUND);
                 textSpeaker.speak("已清空");
                 keyPos.reset();
-                refresh();
+                refreshKeyPos();
                 currCandidate = "";
                 refreshCurrCandidate();
                 break;
@@ -748,7 +844,7 @@ public class MainActivity extends AppCompatActivity {
                     assert KeyPos.getInitxByChar(c) == keyPos.getInitx(c);
                     assert KeyPos.getInityByChar(c) == keyPos.getInity(c);
                 }
-                refresh();
+                refreshKeyPos();
             }
         });
     }
