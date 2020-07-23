@@ -1,2 +1,2 @@
 include ':app'
-rootProject.name='AudioKeyboard'
+rootProject.name='VIPKeyboard'

@@ -23,6 +23,14 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.TextView;
 
+import com.elvishew.xlog.LogConfiguration;
+import com.elvishew.xlog.LogLevel;
+import com.elvishew.xlog.XLog;
+import com.elvishew.xlog.flattener.PatternFlattener;
+import com.elvishew.xlog.printer.ConsolePrinter;
+import com.elvishew.xlog.printer.Printer;
+import com.elvishew.xlog.printer.file.FilePrinter;
+import com.elvishew.xlog.printer.file.naming.DateFileNameGenerator;
 import com.example.audiokeyboard.Utils.DataRecorder;
 import com.example.audiokeyboard.Utils.Key;
 import com.example.audiokeyboard.Utils.KeyPos;
@@ -240,11 +248,27 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void initLog() {
+        // avaiable logtags: RAW_TOUCH_EVENT
+        LogConfiguration config = new LogConfiguration.Builder()
+                .logLevel(LogLevel.ALL)
+                .tag("STUDY")
+                .build();
+        Printer consolePrinter = new ConsolePrinter();
+        Printer filePrinter = new FilePrinter
+                .Builder("/sdcard/VIPKeyboard/")
+                .fileNameGenerator(new DateFileNameGenerator())
+                .flattener(new PatternFlattener("{d yyyy-MM-dd HH:mm:ss.SSS}|{l}|{t}|{m}"))
+                .build();
+        XLog.init(config, consolePrinter, filePrinter);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main_relative);
+        initLog();
         init();
         initPinyin();
         debug();
@@ -703,6 +727,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
         float y = event.getY()-keyPos.wholewindowSize+keyPos.partialwindowSize;
+        XLog.tag("RAW_TOUCH_EVENT").i("%s,%f,%f", MotionEvent.actionToString(event.getActionMasked()), x, y);
         // float y = event.getY();
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
