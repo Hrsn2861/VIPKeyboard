@@ -2,11 +2,17 @@ package com.example.audiokeyboard;
 
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.PreferenceManager;
+
+import com.elvishew.xlog.XLog;
 
 public class SettingsActivity extends AppCompatActivity {
 
@@ -31,6 +37,11 @@ public class SettingsActivity extends AppCompatActivity {
             setPreferencesFromResource(R.xml.root_preferences, rootKey);
         }
     }
+
+    public void startStudy(View view) {
+        XLog.d("start study in settings activity");
+    }
+
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {

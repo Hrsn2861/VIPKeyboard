@@ -18,9 +18,11 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.elvishew.xlog.LogConfiguration;
@@ -268,6 +270,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main_relative);
+
         initLog();
         init();
         initPinyin();
@@ -280,11 +283,16 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    MenuItem studyItem = null;
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_settings:
                 startActivityForResult(new Intent(this, SettingsActivity.class), SETTINGS_CODE);
+                break;
+            case R.id.action_startStudy:
+                studyItem = item;
+                startStudy();
                 break;
             default:
                 break;
@@ -788,4 +796,20 @@ public class MainActivity extends AppCompatActivity {
         Log.e("+++++++test word", "word not found");
     }
 
+
+    private boolean inStudy = false;
+    public void startStudy() {
+        XLog.i("start");
+        inStudy = true;
+        studyItem.setTitle("实验中");
+        studyItem.setEnabled(!inStudy);
+        XLog.tag("CONFIG").i("Feedback,%s", isDaFirst()?"DaFirst":"ReadFirst");
+    }
+
+    public void endStudy() {
+        XLog.d("study end");
+        inStudy = false;
+        studyItem.setTitle("开始实验");
+        studyItem.setEnabled(inStudy);
+    }
 }

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <Button
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/startStudyButton"
+        android:text="开始实验"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:onClick="startStudy">
+
+    </Button>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -22,6 +22,11 @@
 
     <PreferenceCategory app:title="@string/messages_header">
 
+        <Preference
+            app:title="开始实验"
+            app:key="startStudy"
+            app:widgetLayout="@layout/preference_start_button"/>
+
         <EditTextPreference
             app:key="signature"
             app:title="@string/signature_title"
