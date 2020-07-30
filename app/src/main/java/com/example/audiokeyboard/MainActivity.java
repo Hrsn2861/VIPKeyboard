@@ -14,6 +14,7 @@ import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.renderscript.ScriptGroup;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -45,6 +46,7 @@ import com.example.audiokeyboard.Utils.PinyinCandidateList;
 import com.example.audiokeyboard.Utils.Word;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -443,49 +445,49 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     }
 
     public void processTouchUp(float x, float y) {
-        isDaVoiceHappened = false;
-        if(isTowFingerMotion) return;
+ /*       isDaVoiceHappened = false;
+        if(isTowFingerMotion) return;*/
         int moveType = MotionSeperator.getMotionType(startPoint, endPoint);
-        long timeGap = startPoint.getTimeBetween(endPoint);
+        //long timeGap = startPoint.getTimeBetween(endPoint);
         switch (moveType) {
             case MotionSeperator.FLING_DOWN:                    // this means backspace
 
-                if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
-                    try {
-                        if (mIPinyinDecoderService.imGetFixedLen() == 0) {
-                            recorder.removeLast();
-                            textSpeaker.speak(deleteLast() + "已删除");
-                        }
-                        else {
-                            mIPinyinDecoderService.imCancelLastChoice();
-                            String buf = currHanziAndPinyin.substring(0, mIPinyinDecoderService.imGetFixedLen());
-                            for(int i=0;i<currHanziAndPinyin.length();i++) deleteLast();
-                            write(buf+" "+currHanziAndPinyin);
-                            buf += recorder.getDataAsString().substring(mIPinyinDecoderService.imGetSplStart()[mIPinyinDecoderService.imGetFixedLen()+1]);
-                            write(buf);
-                            currHanziAndPinyin = buf;
-                            appendText(buf);
-                            currCandidateChn.setPinyin(recorder.getDataAsString());
-                            currCandidateChn.setHanzi(mIPinyinDecoderService.imGetChoice(0));
-                            currCandidateIndex = -1;
-                        }
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                else if(langMode == LANG_ENG) {
-                    recorder.removeLast();
-                    textSpeaker.speak(deleteLast() + "已删除");
-                }
-
-                currentChar.setChar(KEY_NOT_FOUND);
-                keyPos.reset();
-                refresh();
-                refreshCandidate(0);
-                break;
+//                if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
+//                    try {
+//                        if (mIPinyinDecoderService.imGetFixedLen() == 0) {
+//                            recorder.removeLast();
+//                            textSpeaker.speak(deleteLast() + "已删除");
+//                        }
+//                        else {
+//                            mIPinyinDecoderService.imCancelLastChoice();
+//                            String buf = currHanziAndPinyin.substring(0, mIPinyinDecoderService.imGetFixedLen());
+//                            for(int i=0;i<currHanziAndPinyin.length();i++) deleteLast();
+//                            write(buf+" "+currHanziAndPinyin);
+//                            buf += recorder.getDataAsString().substring(mIPinyinDecoderService.imGetSplStart()[mIPinyinDecoderService.imGetFixedLen()+1]);
+//                            write(buf);
+//                            currHanziAndPinyin = buf;
+//                            appendText(buf);
+//                            currCandidateChn.setPinyin(recorder.getDataAsString());
+//                            currCandidateChn.setHanzi(mIPinyinDecoderService.imGetChoice(0));
+//                            currCandidateIndex = -1;
+//                        }
+//                    } catch (RemoteException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//
+//                else if(langMode == LANG_ENG) {
+//                    recorder.removeLast();
+//                    textSpeaker.speak(deleteLast() + "已删除");
+//                }
+//
+//                currentChar.setChar(KEY_NOT_FOUND);
+//                keyPos.reset();
+//                refresh();
+//                refreshCandidate(0);
+//                break;
             case MotionSeperator.FLING_UP:                   // this means word selected
-                String s = "";
+/*                String s = "";
                 textSpeaker.stop();
                 currentChar.setChar(KEY_NOT_FOUND);
 
@@ -548,9 +550,9 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
                 keyPos.reset();
                 refresh();
                 refreshCandidate(0);
-                break;
+                break;*/
             case MotionSeperator.FLING_RIGHT:
-                textSpeaker.stop();
+/*                textSpeaker.stop();
                 currCandidateIndex = Math.min(currCandidateIndex+1, this.candidates.size()-1);
 
                 if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
@@ -575,9 +577,9 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
 
                 refreshCandidate(Math.max(0, currCandidateIndex));
                 refreshCurrCandidate();
-                break;
+                break;*/
             case MotionSeperator.FLING_LEFT:
-                textSpeaker.stop();
+ /*               textSpeaker.stop();
                 currCandidateIndex = currCandidateIndex == 0 ? -1 : Math.max(currCandidateIndex-1, 0);
 
                 if(langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN) {
@@ -605,10 +607,10 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
                 }
                 refreshCandidate(Math.max(0, currCandidateIndex));
                 refreshCurrCandidate();
-                break;
+                break;*/
             case MotionSeperator.NORMAL_MOVE:
             default:
-                currCandidateIndex = -1;
+ /*               currCandidateIndex = -1;
                 currCandidate = "";
                 if(!skipUpDetect || startPoint.getDistance(endPoint) > minMoveDistToCancelBestChar)                         // 如果这里面不要跳过或者移动距离超了才会进行更新currentchar，否则会直接利用touchdown时候的字符；
                     currentChar.setChar(keyPos.getKeyByPosition(x, y, currMode, getkey_mode));
@@ -628,7 +630,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
                 if(!candidates.isEmpty() && speakCandidate && timeGap > maxWaitingTimeToSpeakCandidate) {
                     textSpeaker.speak(candidates.get(0).getText());
                 }
-                break;
+                break;*/
         }
     }
 
@@ -720,15 +722,15 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         int motionType = MotionSeperator.getMotionType(startPoint, secondStartPoint, endPoint, secondEndPoint);
         switch(motionType) {
             case MotionSeperator.DOUBLE_FLING_DOWN:
-                recorder.clear();
-                clearText();
-                currentChar.setChar(KEY_NOT_FOUND);
-                textSpeaker.speak("已清空");
-                keyPos.reset();
-                refresh();
-                currCandidate = "";
-                refreshCurrCandidate();
-                break;
+//                recorder.clear();
+//                clearText();
+//                currentChar.setChar(KEY_NOT_FOUND);
+//                textSpeaker.speak("已清空");
+//                keyPos.reset();
+//                refresh();
+//                currCandidate = "";
+//                refreshCurrCandidate();
+//                break;
             default:
                 // Log.e("++++++++++", "NULL MOVE");
         }
@@ -769,11 +771,219 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     @Override
     public void onSwipe(GestureDetector.Direction direction) {
         XLog.tag("GESTURE").i("SWIPE" + direction.name());
+        switch (direction) {
+            case DOWN: //删除
+                if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
+                    try {
+                        if (mIPinyinDecoderService.imGetFixedLen() == 0) {
+                            recorder.removeLast();
+                            textSpeaker.speak(deleteLast() + "已删除");
+                        }
+                        else {
+                            mIPinyinDecoderService.imCancelLastChoice();
+                            String buf = currHanziAndPinyin.substring(0, mIPinyinDecoderService.imGetFixedLen());
+                            for(int i=0;i<currHanziAndPinyin.length();i++) deleteLast();
+                            write(buf+" "+currHanziAndPinyin);
+                            buf += recorder.getDataAsString().substring(mIPinyinDecoderService.imGetSplStart()[mIPinyinDecoderService.imGetFixedLen()+1]);
+                            write(buf);
+                            currHanziAndPinyin = buf;
+                            appendText(buf);
+                            currCandidateChn.setPinyin(recorder.getDataAsString());
+                            currCandidateChn.setHanzi(mIPinyinDecoderService.imGetChoice(0));
+                            currCandidateIndex = -1;
+                        }
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                else if(langMode == LANG_ENG) {
+                    recorder.removeLast();
+                    textSpeaker.speak(deleteLast() + "已删除");
+                }
+
+                currentChar.setChar(KEY_NOT_FOUND);
+                keyPos.reset();
+                refresh();
+                refreshCandidate(0);
+                break;
+            case UP: //确认
+                String s = "";
+                textSpeaker.stop();
+                currentChar.setChar(KEY_NOT_FOUND);
+
+                if(langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN) {
+                    s = currHanziAndPinyin;
+                    // Log.e("current candidate", currCandidate);
+                    // Log.e("current candidate chn", currCandidateChn.getHanzi());
+                    try {
+                        int temp;
+                        String curr = recorder.getDataAsString();
+                        int fixedLen = mIPinyinDecoderService.imGetFixedLen();
+                        if(mIPinyinDecoderService.imGetFixedLen() == 0)                                 // 如果没有确定的那么刷新；
+                            mIPinyinDecoderService.imSearch(curr.getBytes(), curr.length());
+                        if(currCandidateIndex == -1)
+                            temp = mIPinyinDecoderService.imChoose(0);
+                        else
+                            temp = mIPinyinDecoderService.imChoose(currCandidateIndex);
+
+                        if(temp == 1) {                 // 最后一个拼音
+                            // int removeLength = getRemainPinyinLength(currHanziAndPinyin);
+                            int removeLength = currHanziAndPinyin.length() - fixedLen;
+                            for(int i=0;i<removeLength;i++) deleteLast();
+
+                            s = currCandidateChn.getHanzi();
+                            Log.e("++++++++++", s);
+                            mIPinyinDecoderService.imResetSearch();
+                            recorder.clear();
+                            currHanziAndPinyin = "";
+                        }
+                        else {
+                            if (currHanziAndPinyin.length() == 0) currHanziAndPinyin = recorder.getDataAsString();
+                            for(int i=0;i<currHanziAndPinyin.length();i++) deleteLast();
+
+                            String buffer = mIPinyinDecoderService.imGetChoice(0);
+
+                            s = buffer.substring(0, mIPinyinDecoderService.imGetFixedLen());
+                            s += recorder.getDataAsString().substring(mIPinyinDecoderService.imGetSplStart()[mIPinyinDecoderService.imGetFixedLen()+1]);
+                            currHanziAndPinyin = s;
+
+                            currCandidateIndex = -1;
+                            currCandidateChn.setHanzi(buffer.substring(mIPinyinDecoderService.imGetFixedLen()));
+                            currCandidateChn.setPinyin("");
+                        }
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                else if(langMode == LANG_ENG) {
+                    s = recorder.getDataAsString();
+                    for(int i=0;i<s.length();i++) deleteLast();
+                    if(currCandidateIndex != -1) {
+                        s = currCandidate;
+                    }
+                    recorder.clear();
+                }
+
+                appendText(s);
+                speak(s);
+                keyPos.reset();
+                refresh();
+                refreshCandidate(0);
+                break;
+            case LEFT: //上一个
+                textSpeaker.stop();
+                currCandidateIndex = currCandidateIndex == 0 ? -1 : Math.max(currCandidateIndex-1, 0);
+
+                if(langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN) {
+                    if(this.candidates.isEmpty() || this.pinyinCandidateList.size() == 0) {
+                        currCandidate = "no candidate";
+                        currCandidateChn = new PinyinCandidate(0, 0, 0, "", "");
+                    }
+                    else if(currCandidateIndex == -1) {
+                        currCandidate = recorder.getDataAsString();
+                        currCandidateChn = new PinyinCandidate(0, 0, 0, "", "");
+                    }
+                    else {
+                        currCandidate = this.pinyinCandidateList.getHanzi(currCandidateIndex);
+                        currCandidateChn = this.pinyinCandidateList.get(currCandidateIndex);
+                    }
+                    speak(currCandidateChn.getHanzi());
+                }
+
+                else if(langMode == LANG_ENG) {
+                    if (candidates.isEmpty())
+                        currCandidate = "no candidate";
+                    else
+                        currCandidate = currCandidateIndex == -1 ? recorder.getDataAsString() : this.candidates.get(currCandidateIndex).getText();
+                    speak(currCandidate);
+                }
+                refreshCandidate(Math.max(0, currCandidateIndex));
+                refreshCurrCandidate();
+                break;
+            case RIGHT: //下一个
+                textSpeaker.stop();
+                XLog.tag("DEBUG").d(currCandidateIndex);
+                currCandidateIndex = Math.min(currCandidateIndex+1, this.candidates.size()-1);
+                XLog.tag("DEBUG").d(currCandidateIndex);
+                if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
+                    if(this.candidates.isEmpty() || this.pinyinCandidateList.size() == 0) {
+                        currCandidate = "no candidate";
+                        currCandidateChn = new PinyinCandidate(0, 0, 0, "", "");
+                    }
+                    else {
+                        currCandidate = this.pinyinCandidateList.getHanzi(currCandidateIndex);
+                        currCandidateChn = this.pinyinCandidateList.get(currCandidateIndex);
+                    }
+                    speak(currCandidateChn.getHanzi());
+                }
+
+                else if(langMode == LANG_ENG) {
+                    if(this.candidates.isEmpty())
+                        currCandidate = "no candidate";
+                    else
+                        currCandidate = this.candidates.get(currCandidateIndex).getText();
+                    speak(currCandidate);
+                }
+
+                refreshCandidate(Math.max(0, currCandidateIndex));
+                refreshCurrCandidate();
+                break;
+            default:
+                break;
+        }
+    }
+
+    @Override
+    public void onTap(MotionEvent event) {
+        float x = event.getX();
+        float y = event.getY()-keyPos.wholewindowSize+keyPos.partialwindowSize;
+
+        isDaVoiceHappened = false;
+        //long timeGap = startPoint.getTimeBetween(endPoint);
+        long timeGap = System.currentTimeMillis() - startPoint.getTime();
+        /////////
+
+        currCandidateIndex = -1;
+        currCandidate = "";
+        if(!skipUpDetect || startPoint.getDistance(endPoint) > minMoveDistToCancelBestChar)                         // 如果这里面不要跳过或者移动距离超了才会进行更新currentchar，否则会直接利用touchdown时候的字符；
+            currentChar.setChar(keyPos.getKeyByPosition(x, y, currMode, getkey_mode));
+        if(currentChar.getChar() == KEY_NOT_FOUND) return;
+        if(currentChar.getChar() > 'z' || currentChar.getChar() < 'a') return;
+        if(timeGap > minTimeGapThreshold || ((recorder.getDataLength() == 0) && isFirstCharCertain)) {               // 说明这个时候是确定的字符
+            recorder.add(currentChar.getChar(), true);
+            //mediaPlayer.start();
+        }
+        else {
+            recorder.add(currentChar.getChar(), false);
+        }
+        appendText(currentChar.getChar()+"");
+        refreshCandidate(0);
+        refreshCurrCandidate();
+        debugCandidateView.setText(recorder.getDebugString());
+        if(!candidates.isEmpty() && speakCandidate && timeGap > maxWaitingTimeToSpeakCandidate) {
+            textSpeaker.speak(candidates.get(0).getText());
+        }
     }
 
     @Override
     public void on2FingerSwipe(GestureDetector.Direction direction) {
         XLog.tag("GESTURE").i("2SWIPE" + direction.name());
+        switch (direction) {
+            case LEFT: //清空
+                recorder.clear();
+                clearText();
+                currentChar.setChar(KEY_NOT_FOUND);
+                textSpeaker.speak("已清空");
+                keyPos.reset();
+                refresh();
+                currCandidate = "";
+                refreshCurrCandidate();
+                break;
+            default:
+                break;
+        }
     }
 
     public void debug() {
@@ -811,12 +1021,27 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
 
 
     private boolean inStudy = false;
+
+    private void readTestPhrase() {
+        try {
+            InputStream is = getResources().openRawResource(R.raw.eng_test_phrase);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            String str;
+            while ((str = reader.readLine()) != null) {
+                System.out.println(str);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     public void startStudy() {
+        readTestPhrase();
         XLog.i("start");
         inStudy = true;
         studyItem.setTitle("实验中");
         studyItem.setEnabled(!inStudy);
         XLog.tag("CONFIG").i("Feedback,%s", isDaFirst()?"DaFirst":"ReadFirst");
+
     }
 
     public void endStudy() {

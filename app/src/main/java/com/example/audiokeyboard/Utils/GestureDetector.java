@@ -26,7 +26,8 @@ public class GestureDetector {
             return null;
         }
     }
-    final float DISTANCE_THRESHOLD = 200;
+    final float DISTANCE_THRESHOLD = 300;
+    final float DISTANCE_LINE_THRESHOLD = 50; //在某个轴上滑动时，另一个轴上不能大于此距离
     final float DISTANCE_JITTOR = 10;
     final long TIME_THRESHOLD = 300;
     final int TRACK_POINTER_NUM = 5;
@@ -45,6 +46,10 @@ public class GestureDetector {
         for (int i=0; i<TRACK_POINTER_NUM; i++) {
             startPos[i][0] = -1;
             startPos[i][1] = -1;
+            midPos[i][0] = -1;
+            midPos[i][1] = -1;
+            movePos[i][0] = -1;
+            movePos[i][1] = -1;
             firstDir[i] = null;
             secondDir[i] = null;
         }
@@ -59,6 +64,7 @@ public class GestureDetector {
         XLog.tag("detector").i("startPos");
         XLog.tag("detector").i(startPos);
         XLog.tag("detector").i(midPos);
+        XLog.tag("detector").i(movePos);
         XLog.tag("detector").i(debug(firstDir));
         XLog.tag("detector").i(debug(secondDir));
         int action = event.getAction() & MotionEvent.ACTION_MASK;
@@ -83,54 +89,64 @@ public class GestureDetector {
                 startPos[actionId][1] = y;
                 break;
             case MotionEvent.ACTION_MOVE:
-                movePos[actionId][0] = x;
-                movePos[actionId][1] = y;
-                if (hasDir && time - midTime < TIME_THRESHOLD) {
-                    if (Math.abs(movePos[actionId][0] - midPos[actionId][0]) > second_threshold) {
-                        if (movePos[actionId][0] > midPos[actionId][0]) {
-                            secondDir[actionId] = Direction.RIGHT;
-                        } else {
-                            secondDir[actionId] = Direction.LEFT;
-                        }
-                    } else if (Math.abs(movePos[actionId][1] - midPos[actionId][1]) > second_threshold) {
-                        if (movePos[actionId][1] > midPos[actionId][1]) {
-                            secondDir[actionId] = Direction.DOWN;
-                        } else {
-                            secondDir[actionId] = Direction.UP;
-                        }
-                    }
-                    hasSecondDir = true;
-                    if (secondDir[actionId] == firstDir[actionId]) {
-                        midPos[actionId][0] = x;
-                        midPos[actionId][1] = y;
-                        midTime = time;
-                        hasSecondDir = false;
-                    }
-                    if (hasSecondDir) {
-                        second_threshold = DISTANCE_THRESHOLD;
-                    }
-                }
+                int count = event.getPointerCount();
+                for (int i = 0; i < count; i++) {
+                    movePos[i][0] = event.getX(i);
+                    movePos[i][1] = event.getY(i);
 
-                if (!hasDir && time - startTime < TIME_THRESHOLD) {
-                    if (Math.abs(movePos[actionId][0] - startPos[actionId][0]) > DISTANCE_THRESHOLD) {
-                        hasDir = true;
-                        midTime = time;
-                        midPos[actionId][0] = x;
-                        midPos[actionId][1] = y;
-                        if (movePos[actionId][0] > startPos[actionId][0]) {
-                            firstDir[actionId] = Direction.RIGHT;
-                        } else {
-                            firstDir[actionId] = Direction.LEFT;
+//                movePos[actionId][0] = x;
+//                movePos[actionId][1] = y;
+                    if (hasDir && time - midTime < TIME_THRESHOLD) {
+                        if (Math.abs(movePos[actionId][0] - midPos[actionId][0]) > second_threshold &&
+                                Math.abs(movePos[actionId][1] - midPos[actionId][1]) < DISTANCE_LINE_THRESHOLD) {
+                            if (movePos[actionId][0] > midPos[actionId][0]) {
+                                secondDir[actionId] = Direction.RIGHT;
+                            } else {
+                                secondDir[actionId] = Direction.LEFT;
+                            }
+                        } else if (Math.abs(movePos[actionId][1] - midPos[actionId][1]) > second_threshold &&
+                                Math.abs(movePos[actionId][0] - midPos[actionId][0]) < DISTANCE_LINE_THRESHOLD) {
+                            if (movePos[actionId][1] > midPos[actionId][1]) {
+                                secondDir[actionId] = Direction.DOWN;
+                            } else {
+                                secondDir[actionId] = Direction.UP;
+                            }
                         }
-                    } else if (Math.abs(movePos[actionId][1] - startPos[actionId][1]) > DISTANCE_THRESHOLD) {
-                        hasDir = true;
-                        midTime = time;
-                        midPos[actionId][0] = x;
-                        midPos[actionId][1] = y;
-                        if (movePos[actionId][1] > startPos[actionId][1]) {
-                            firstDir[actionId] = Direction.DOWN;
-                        } else {
-                            firstDir[actionId] = Direction.UP;
+                        hasSecondDir = true;
+                        if (secondDir[actionId] == firstDir[actionId]) {
+                            midPos[actionId][0] = x;
+                            midPos[actionId][1] = y;
+                            midTime = time;
+                            hasSecondDir = false;
+                        }
+                        if (hasSecondDir) {
+                            second_threshold = DISTANCE_THRESHOLD;
+                        }
+                    }
+
+                    if (!hasDir && time - startTime < TIME_THRESHOLD) {
+                        if (Math.abs(movePos[actionId][0] - startPos[actionId][0]) > DISTANCE_THRESHOLD
+                                && Math.abs(movePos[actionId][1] - startPos[actionId][1]) < DISTANCE_LINE_THRESHOLD) {
+                            hasDir = true;
+                            midTime = time;
+                            midPos[actionId][0] = x;
+                            midPos[actionId][1] = y;
+                            if (movePos[actionId][0] > startPos[actionId][0]) {
+                                firstDir[actionId] = Direction.RIGHT;
+                            } else {
+                                firstDir[actionId] = Direction.LEFT;
+                            }
+                        } else if (Math.abs(movePos[actionId][1] - startPos[actionId][1]) > DISTANCE_THRESHOLD
+                                && Math.abs(movePos[actionId][0] - startPos[actionId][0]) < DISTANCE_LINE_THRESHOLD) {
+                            hasDir = true;
+                            midTime = time;
+                            midPos[actionId][0] = x;
+                            midPos[actionId][1] = y;
+                            if (movePos[actionId][1] > startPos[actionId][1]) {
+                                firstDir[actionId] = Direction.DOWN;
+                            } else {
+                                firstDir[actionId] = Direction.UP;
+                            }
                         }
                     }
                 }
@@ -138,11 +154,14 @@ public class GestureDetector {
             case MotionEvent.ACTION_POINTER_UP:
                 break;
             case MotionEvent.ACTION_UP:
+                System.out.println("***********" + (event.getEventTime() - startTime) + "************");
                 if (hasDir) {
                     slideResponse(fingerNum, firstDir, secondDir);
                 } else {
                     if (listener != null) {
-//                        listener.onTap();
+                        XLog.tag("detector").i("ontap");
+
+                        listener.onTap(event);
                     }
                 }
 
@@ -155,7 +174,7 @@ public class GestureDetector {
     public interface onGestureListener {
         public void onSwipe(Direction direction);
         public void on2FingerSwipe(Direction direction);
-//        public void onTap();
+        public void onTap(MotionEvent event);
     }
     private onGestureListener listener = null;
 
@@ -175,6 +194,7 @@ public class GestureDetector {
     }
 
     private Direction joinDirection(Direction d1, Direction d2) {
+        if (d2 == null) return d1;
         if (d1 == d2) return d1;
         return Direction.getDirectionByValue((1+d1.value) * 4+d2.value);
     }
