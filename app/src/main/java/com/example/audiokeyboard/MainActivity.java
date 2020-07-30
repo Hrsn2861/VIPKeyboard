@@ -34,6 +34,7 @@ import com.elvishew.xlog.printer.Printer;
 import com.elvishew.xlog.printer.file.FilePrinter;
 import com.elvishew.xlog.printer.file.naming.DateFileNameGenerator;
 import com.example.audiokeyboard.Utils.DataRecorder;
+import com.example.audiokeyboard.Utils.GestureDetector;
 import com.example.audiokeyboard.Utils.Key;
 import com.example.audiokeyboard.Utils.KeyPos;
 import com.example.audiokeyboard.Utils.Letter;
@@ -51,7 +52,7 @@ import java.util.List;
 
 import javax.crypto.Mac;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements GestureDetector.onGestureListener {
 
     final String TAG = "MainActivity";
 
@@ -133,6 +134,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    GestureDetector gestureDetector = new GestureDetector(this);
     void defaultParams() {
         currMode = Key.MODE_VIP;
     }
@@ -733,6 +735,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public boolean onTouchEvent(MotionEvent event) {
+        gestureDetector.onTouch(event);
         float x = event.getX();
         float y = event.getY()-keyPos.wholewindowSize+keyPos.partialwindowSize;
         XLog.tag("RAW_TOUCH_EVENT").i("%s,%f,%f", MotionEvent.actionToString(event.getActionMasked()), x, y);
@@ -761,6 +764,16 @@ public class MainActivity extends AppCompatActivity {
                 processDoubleTouchUp(x, y);
         }
         return super.onTouchEvent(event);
+    }
+
+    @Override
+    public void onSwipe(GestureDetector.Direction direction) {
+        XLog.tag("GESTURE").i("SWIPE" + direction.name());
+    }
+
+    @Override
+    public void on2FingerSwipe(GestureDetector.Direction direction) {
+        XLog.tag("GESTURE").i("2SWIPE" + direction.name());
     }
 
     public void debug() {
