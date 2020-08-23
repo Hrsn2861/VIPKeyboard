@@ -201,17 +201,6 @@ public class Predictor {
 
         ArrayList<Word> ret = new ArrayList<>();
         String data = recorder.getDataAsString();
-        ////
-        System.out.println("candidate:");
-        for (int j=0; j<data.length();j++) {
-            if (recorder.letterAt(j).isCorrect()) {
-                System.out.print(recorder.letterAt(j).getChar());
-            } else {
-                System.out.print("<"+recorder.letterAt(j).getChar()+">");
-            }
-        }
-        System.out.println();
-        ////
 
         ArrayList<Word> dict;
         switch (langMode) {

@@ -19,36 +19,53 @@
         android:scaleType="fitEnd"></com.example.audiokeyboard.KeyboardView>
 
     <TextView
-        android:id="@+id/mytext"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/studyText"
         android:paddingLeft="20dp"
         android:paddingTop="20dp"
-        android:textSize="25dp">
+        android:textSize="@dimen/textSize"
+        android:fontFamily="monospace"
+        />
+
+    <TextView
+        android:id="@+id/mytext"
+        android:layout_below="@id/studyText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:paddingLeft="20dp"
+        android:paddingTop="20dp"
+        android:textSize="@dimen/textSize">
     </TextView>
 
     <TextView
         android:id="@+id/candidateView"
-        android:paddingTop="60dp"
+        android:layout_below="@id/mytext"
+        android:paddingTop="20dp"
         android:paddingLeft="20dp"
+        android:fontFamily="monospace"
+        android:textSize="@dimen/textSize"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content">
     </TextView>
 
     <TextView
         android:id="@+id/currCandidate"
-        android:paddingTop="120dp"
-        android:paddingLeft="200dp"
+        android:layout_below="@id/candidateView"
+        android:paddingTop="20dp"
+        android:paddingLeft="20dp"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content">
     </TextView>
 
     <TextView
         android:id="@+id/debugCandidate"
-        android:paddingTop="300dp"
-        android:paddingLeft="200dp"
+        android:layout_below="@id/currCandidate"
+        android:paddingTop="50dp"
+        android:paddingLeft="20dp"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content">
     </TextView>
 
 </RelativeLayout>

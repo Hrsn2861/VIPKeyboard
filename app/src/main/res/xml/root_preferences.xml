@@ -4,6 +4,7 @@
         app:key="feedback"
         app:title="反馈方式"
         app:summaryOff="先读再嗒"
+        app:defaultValue="true"
         app:summaryOn="先嗒再读"/>
 
     <ListPreference
@@ -17,6 +18,14 @@
     <SwitchPreferenceCompat
         app:key="firstChar"
         app:title="首字符固定"
+        app:defaultValue="false"
+        app:summaryOff="否"
+        app:summaryOn="是"/>
+
+    <SwitchPreferenceCompat
+        app:key="autoSpeakCandidate"
+        app:title="是否直接读候选"
+        app:defaultValue="true"
         app:summaryOff="否"
         app:summaryOn="是"/>
 
