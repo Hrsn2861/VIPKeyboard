@@ -82,7 +82,7 @@ public class GestureDetector {
 
 
 
-    final float DISTANCE_THRESHOLD = 300;
+    final float DISTANCE_THRESHOLD = 20;
     final float DISTANCE_LINE_THRESHOLD = 200; //在某个轴上滑动时，另一个轴上不能大于此距离
     final float DISTANCE_JITTOR = 10;
     final long TIME_THRESHOLD = 300;
@@ -120,6 +120,7 @@ public class GestureDetector {
         //TODO: cancel long press and taps
     }
     private VelocityTracker velocityTracker;
+    private final float DISTANCE_SQUARE_THRESHOLD = 300;
     private final int maxFlingVelocity = 8000;
     private final int minFlingVelocity = 50;
     private final int DOUBLE_TAP_TIMEOUT = 300;
@@ -280,7 +281,7 @@ public class GestureDetector {
         vt.computeCurrentVelocity(1000, maxFlingVelocity);
         final float vx = vt.getXVelocity(pointerId);
         final float vy = vt.getYVelocity(pointerId);
-        return (Math.abs(vx) > minFlingVelocity && Math.abs(vy) > minFlingVelocity);
+        return (Math.abs(vx) > minFlingVelocity || Math.abs(vy) > minFlingVelocity);
     }
 
 
@@ -292,6 +293,9 @@ public class GestureDetector {
         int deltaX = (int) firstDown.getX() - (int) secondDown.getX();
         int deltaY = (int) firstDown.getY() - (int) secondDown.getY();
         return (deltaX * deltaX + deltaY * deltaY < DOUBLE_TAP_SLOP * DOUBLE_TAP_SLOP);
+    }
+    private double disSquare(float x1, float y1, float x2, float y2) {
+        return (x1 - x2)*(x1 - x2) + (y1-y2)*(y1-y2);
     }
     List<PointF> points;
     List<MotionEvent> events;
@@ -390,8 +394,13 @@ public class GestureDetector {
                     final float vx = vt.getXVelocity(pointerId);
                     final float vy = vt.getYVelocity(pointerId);
                     //XLog.tag("ontouchevent").d("velocity x:%f, y: %f", vx, vy);
+                    float x1 = currentDownEvent.getX();
+                    float x2 = event.getX();
+                    float y1 = currentDownEvent.getY();
+                    float y2 = event.getY();
+                    double disdis = disSquare(x1, y1, x2, y2);
 
-                    if (Math.abs(vx) > minFlingVelocity || Math.abs(vy) > minFlingVelocity) {
+                    if ((Math.abs(vx) > minFlingVelocity || Math.abs(vy) > minFlingVelocity) && (disdis > DISTANCE_SQUARE_THRESHOLD)) {
                         //XLog.tag("detector").i("swipe velocity:" + vx +","+ vy + "with" + maxPointerNum + "fingers");
                         //Direction dir = recognizeSwipeDirection(points);
                         Direction dir = recognizeSwipeDirectionBySpeed(events);

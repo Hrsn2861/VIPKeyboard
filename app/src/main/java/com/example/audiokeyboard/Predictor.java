@@ -28,6 +28,7 @@ public class Predictor {
     final int LANG_ENG = 0;
     final int LANG_CHN_QUAN = 1;
     final int LANG_CHN_JIAN = 2;
+    final int LANG_CHN = 3;
 
     public double[][] touchmodelBivariate = new double[][] {                                                        // miux, miuy, sigmax, sigmay, rho
             {106.5370705244123,310.4864376130199,30.84643738543627,108.36748192235623,-0.02330831833564358},
@@ -99,6 +100,7 @@ public class Predictor {
             case LANG_ENG:
                 dict = dictEng;
                 break;
+            case LANG_CHN:
             case LANG_CHN_QUAN:
                 dict = dictChnQuan;
                 break;
@@ -208,6 +210,7 @@ public class Predictor {
                 dict = dictEng;
                 break;
             case LANG_CHN_QUAN:
+            case LANG_CHN:
                 dict = dictChnQuan;
                 break;
             case LANG_CHN_JIAN:

@@ -18,10 +18,12 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
@@ -36,6 +38,7 @@ import com.elvishew.xlog.printer.ConsolePrinter;
 import com.elvishew.xlog.printer.Printer;
 import com.elvishew.xlog.printer.file.FilePrinter;
 import com.elvishew.xlog.printer.file.naming.DateFileNameGenerator;
+import com.elvishew.xlog.printer.file.naming.FileNameGenerator;
 import com.example.audiokeyboard.Utils.DataRecorder;
 import com.example.audiokeyboard.Utils.GestureDetector;
 import com.example.audiokeyboard.Utils.Key;
@@ -50,9 +53,13 @@ import com.example.audiokeyboard.Utils.Word;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
 public class MainActivity extends AppCompatActivity implements GestureDetector.onGestureListener {
 
@@ -86,6 +93,8 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     final long maxWaitingTimeToSpeakCandidate = 800;
 
     MediaPlayer mediaPlayer;
+    MediaPlayer pengPlayer;
+    MediaPlayer warnPlayer;
 
     Letter currentChar;
     KeyboardView keyboardView;
@@ -172,10 +181,18 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         initDict();
         this.candidates = new ArrayList<>();
         mediaPlayer = MediaPlayer.create(this, R.raw.ios11_da);
+        pengPlayer = MediaPlayer.create(this, R.raw.peng);;
+        warnPlayer = MediaPlayer.create(this, R.raw.warn);
+
         // PINYIN related
         // langMode = LANG_CHN_QUANPIN;
         pinyinCandidateList = new PinyinCandidateList();
         currCandidateChn = new PinyinCandidate();
+    }
+
+    void errorAudio() {
+        //pengPlayer.start();
+        warnPlayer.start();
     }
 
     void initPredictor() {
@@ -207,7 +224,28 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         predictor.dictChnQuan = getInitDict(R.raw.dict_chn_quanpin);
         predictor.dictChnJian = getInitDict(R.raw.dict_chn_jianpin);
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader((getResources().openRawResource(R.raw.dict_chn_pinyin))));
+//        BufferedReader reader = new BufferedReader(new InputStreamReader((getResources().openRawResource(R.raw.dict_chn_pinyin))));
+        BufferedReader reader = new BufferedReader(new InputStreamReader((getResources().openRawResource(R.raw.dict_chn))));
+
+        String specialchar[] = new String[] { "号", "hao",
+                "把", "ba",
+                "拿", "na",
+                "事", "shi",
+                "再", "zai",
+                "待着", "daizhe",
+                "改", "gai",
+                "及时", "jishi",
+                "嘛", "ma",
+                "时", "shi",
+                "她", "ta",
+                "剩", "sheng",
+                "搞的", "gaode",
+                "有事", "youshi",
+                "聊", "liao",
+                "回", "hui"};
+        for (int i=0; i<specialchar.length/2; i++) {
+            predictor.hanzi2pinyin.put(specialchar[i*2], specialchar[i*2+1]);
+        }
         String line;
         try{
             int lineNo = 0;
@@ -215,7 +253,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
                 lineNo++;
                 String[] ss = line.split(" ");
                 predictor.dictChnChar.add(new Word(ss[2], Double.valueOf(ss[1])));
-                predictor.hanzi2word.put(ss[2], new Word(ss[2], Double.valueOf(ss[1])));
+                predictor.hanzi2word.put(ss[0], new Word(ss[2], Double.valueOf(ss[1])));
                 predictor.hanzi2pinyin.put(ss[2], ss[0]);
                 if (lineNo == DICT_SIZE)
                     break;
@@ -266,7 +304,27 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         Printer consolePrinter = new ConsolePrinter();
         Printer filePrinter = new FilePrinter
                 .Builder("/sdcard/VIPKeyboard/")
-                .fileNameGenerator(new DateFileNameGenerator())
+                .fileNameGenerator(new FileNameGenerator() {
+                    ThreadLocal<SimpleDateFormat> mLocalDateFormat = new ThreadLocal<SimpleDateFormat>() {
+
+                        @Override
+                        protected SimpleDateFormat initialValue() {
+                            return new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+                        }
+                    };
+                    @Override
+                    public boolean isFileNameChangeable() {
+                        return true;
+                    }
+
+                    @Override
+                    public String generateFileName(int logLevel, long timestamp) {
+                        SimpleDateFormat sdf = mLocalDateFormat.get();
+                        sdf.setTimeZone(TimeZone.getDefault());
+                        return sdf.format(new Date(timestamp)) + ".log";
+                    }
+                })
+                //.fileNameGenerator(new DateFileNameGenerator())
                 .flattener(new PatternFlattener("{d yyyy-MM-dd HH:mm:ss.SSS}|{l}|{t}|{m}"))
                 .build();
         XLog.init(config, consolePrinter, filePrinter);
@@ -324,6 +382,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
                 break;
             case "chn":
                 langMode = LANG_CHN;
+                break;
             default:
                 langMode = LANG_ENG;
                 break;
@@ -427,6 +486,12 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
                 s = s.concat(candidates.get(i).getText() + "\n");
             }
             candidateView.setText(s);
+        } else if (langMode == LANG_CHN) {
+            for(int i=start;i<end;i++) {
+                String can = candidates.get(i).getText();
+                s = s.concat(can + "(" + predictor.getWordFromPinyin(can).getText() + ")\n");
+            }
+            candidateView.setText(s);
         }
 
     }
@@ -440,6 +505,15 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             textSpeaker.speakHint(text2speak);
         else if(langMode == LANG_ENG)
             textSpeaker.speak(text2speak);
+        else if (langMode == LANG_CHN) {
+            if (text2speak.matches("[a-z\\s]+")) {
+                String hanzi = predictor.getWordFromPinyin(text2speak).getText();
+                //XLog.tag("DEBUG").i(hanzi);
+                textSpeaker.speak(hanzi);
+            } else {
+                textSpeaker.speak(text2speak);
+            }
+        }
     }
 
     public int getRemainPinyinLength(String s) {
@@ -648,7 +722,8 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             char mostPossible = predictor.getVIPMostPossibleKey(recorder, x, y, langMode);
             if (y < keyPos.topThreshold) {
                 currentChar.setChar(KEY_NOT_FOUND);                         // 需要清空
-                textSpeaker.speak("出界");
+                //errorAudio();
+                //textSpeaker.speak("出界");
                 return;
             }
             char ch = KEY_NOT_FOUND;
@@ -697,18 +772,31 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     char lastReadKey = ' ';
     public void processTouchMove(float x, float y) {
         //if (gestureDetector.isPotentialSwipe()) return;
+
         if (isDaFirst()) {//先嗒再读
             char curr = keyPos.getKeyByPosition(x, y, currMode);
-            if (!isDaVoiceHappened) {
-                mediaPlayer.start();
+            System.out.println("curr!!!!!" + curr + "!!!!!rruc");
+
+            if (!isDaVoiceHappened && !gestureDetector.isPotentialSwipe()) {
+                if (curr == KEY_NOT_FOUND  || curr == ' ')
+                    errorAudio();
+                else
+                    mediaPlayer.start();
                 isDaVoiceHappened = true;
             }
             if (curr != currMoveCharacter) {
                 currMoveCharacter = curr;
             }
             ////
-            if (curr != lastReadKey && System.currentTimeMillis() - startPoint.getTime() > minTimeGapThreshold && curr != KEY_NOT_FOUND) {
-                textSpeaker.speak(curr + "");
+            if (curr != lastReadKey && System.currentTimeMillis() - startPoint.getTime() > minTimeGapThreshold) {
+                mediaPlayer.start();
+                if (curr != KEY_NOT_FOUND && curr != ' ')
+                    textSpeaker.speak(curr + "");
+                else {
+                    System.out.println("error audio here!!!!");
+                    errorAudio();
+                }
+
                 lastReadKey = curr;
             }
 
@@ -748,7 +836,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
         float y = event.getY()-keyPos.wholewindowSize+keyPos.partialwindowSize;
-        XLog.tag("RAW_TOUCH_EVENT").i("%s,%f,%f", MotionEvent.actionToString(event.getActionMasked()), x, y);
+        XLog.tag("RAW_TOUCH_EVENT").i("%s,%f,%f,%d", MotionEvent.actionToString(event.getActionMasked()), x, y, event.getEventTime());
         gestureDetector.onTouchEvent(event);
         // float y = event.getY();
         switch (event.getActionMasked()) {
@@ -783,8 +871,8 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         String s = "";
         textSpeaker.stop();
         currentChar.setChar(KEY_NOT_FOUND);
-        XLog.tag("DEBUG").i("index" + currCandidateIndex);
-        XLog.tag("DEBUG").i(candidates);
+//        XLog.tag("DEBUG").i("index" + currCandidateIndex);
+//        XLog.tag("DEBUG").i(candidates);
 
 
         if(langMode == LANG_CHN_QUANPIN || langMode == LANG_CHN_JIANPIN) {
@@ -832,7 +920,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             }
         }
 
-        else if(langMode == LANG_ENG) {
+        else if(langMode == LANG_ENG || langMode == LANG_CHN) {
             s = recorder.getDataAsString();
             for(int i=0;i<s.length();i++) deleteLast();
             if(currCandidateIndex != -1) {
@@ -881,7 +969,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             }
         }
 
-        else if(langMode == LANG_ENG) {
+        else if(langMode == LANG_ENG || langMode == LANG_CHN) {
             recorder.removeLast();
             textSpeaker.speak(deleteLast() + "已删除");
         }
@@ -913,11 +1001,12 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             speak(currCandidateChn.getHanzi());
         }
 
-        else if(langMode == LANG_ENG) {
+        else if(langMode == LANG_ENG || langMode == LANG_CHN) {
             if (candidates.isEmpty())
-                currCandidate = "no candidate";
+                currCandidate = recorder.getDataAsString();
             else
                 currCandidate = currCandidateIndex == -1 ? recorder.getDataAsString() : this.candidates.get(currCandidateIndex).getText();
+
             speak(currCandidate);
         }
         refreshCandidate(Math.max(0, currCandidateIndex));
@@ -942,7 +1031,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             speak(currCandidateChn.getHanzi());
         }
 
-        else if(langMode == LANG_ENG) {
+        else if(langMode == LANG_ENG || langMode == LANG_CHN) {
             if(this.candidates.isEmpty())
                 currCandidate = "no candidate";
             else
@@ -982,10 +1071,12 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             case DOWN_THEN_RIGHT:
                 readInput();
                 break;
-            case LEFT_THEN_RIGHT:
+            case UP_THEN_RIGHT:
                 if (inStudy) {
-                    previousStudyTask();
+                    endStudy();
                 }
+                break;
+            case LEFT_THEN_RIGHT:
                 break;
             case RIGHT_THEN_LEFT:
                 help();
@@ -998,7 +1089,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     }
 
     private void help() {
-        speak("左右滑动 切换候选 上滑确认 下滑删除 下左开始实验 下上虫读实验任务 左右虫做前一个任务 下右读当前候选");
+        speak("左右滑动 切换候选 上滑确认 下滑删除 下左开始实验 下上虫听实验任务 左右虫做前一个任务 下右读当前候选");
     }
 
     private void readInput() {
@@ -1006,14 +1097,18 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         for (int i =0; i<inputText.length(); i++) {
             split += (inputText.charAt(i) + " ");
         }
-        speak("当前输入内容为 " + inputText + " " + split);
+        String read = inputText;
+        if (langMode == LANG_CHN && inputText.matches("[a-z]+")) {
+            read = predictor.getWordFromPinyin(inputText).getText();
+        }
+        speak("当前输入内容为 " + read + " " + split);
     }
 
     @Override
     public boolean onTap(MotionEvent event) {
         float x = event.getX();
         float y = event.getY()-keyPos.wholewindowSize+keyPos.partialwindowSize;
-        XLog.tag("GESTURE").i("TAP," + x + "," + y);
+        XLog.tag("GESTURE").i("TAP," + x + "," + y + "," + event.getDownTime() + "," + event.getEventTime());
 
         isDaVoiceHappened = false;
         //long timeGap = startPoint.getTimeBetween(endPoint);
@@ -1049,7 +1144,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         XLog.tag("STUDY").i("CHAR,%s", debugStr);
         debugCandidateView.setText(debugStr);
         if(!candidates.isEmpty() && autoSpeakCandidate) {
-            textSpeaker.speak(candidates.get(0).getText());
+            speak(candidates.get(0).getText());
         }
         return false;
     }
@@ -1058,8 +1153,13 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     public boolean on2FingerSwipe(GestureDetector.Direction direction) {
         XLog.tag("GESTURE").i("2SWIPE" + direction.name());
         switch (direction) {
-            case LEFT: //清空
+            case DOWN: //清空
                 clearAll();
+                break;
+            case LEFT:
+                if (inStudy) {
+                    previousStudyTask();
+                }
                 break;
             default:
                 break;
@@ -1086,7 +1186,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         refresh();
         currCandidate = "";
         refreshCurrCandidate();
-        XLog.d("CLEARALL");
+        XLog.i("CLEARALL");
     }
 
     public void debug() {
@@ -1133,7 +1233,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     private void loadTestPhrase() {
         if (testPhrases.size() == 0) {
             try {
-                InputStream is = getResources().openRawResource(R.raw.eng_test_phrase);
+                InputStream is = getResources().openRawResource(R.raw.chn_test_phrases);
                 BufferedReader reader = new BufferedReader(new InputStreamReader(is));
                 String str;
                 while ((str = reader.readLine()) != null) {
@@ -1151,9 +1251,30 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
                 tasks.add(word);
             }
         }
+        /*if (testPhrases.size() == 0) {
+            try {
+                InputStream is = getResources().openRawResource(R.raw.eng_test_phrase);
+                BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+                String str;
+                while ((str = reader.readLine()) != null) {
+                    testPhrases.add(str);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        Collections.shuffle(testPhrases);
+        tasks.clear();
+        for (int i=0; i< TASK_NUM; i++) {
+            String[] words = testPhrases.get(i).split(" ");
+            for (String word : words) {
+                tasks.add(word);
+            }
+        }*/
     }
     public void startStudy() {
         loadTestPhrase();
+        langMode = LANG_CHN;
         XLog.i("STARTTASK");
         inStudy = true;
         setTitle("实验中");
@@ -1181,8 +1302,8 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             return;
         }
         String task = tasks.get(currentTaskIndex);
-        studyPhraseView.setText(task);
-        XLog.i("TASK,%s", task);
+        studyPhraseView.setText(task + predictor.hanzi2pinyin.get(task));
+        XLog.i("TASK,%s,%s", task, predictor.hanzi2pinyin.get(task));
         readStudyTask();
     }
 
@@ -1193,13 +1314,18 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         if (currentTaskIndex < 0) currentTaskIndex = 0;
         String task = tasks.get(currentTaskIndex);
         studyPhraseView.setText(task);
-        XLog.i("TASK,%s", task);
+        XLog.i("TASK,%s,%s", task, predictor.hanzi2pinyin.get(task));
         readStudyTask();
     }
 
     private void readStudyTask() {
         if (currentTaskIndex < 0 || currentTaskIndex >= tasks.size()) return;
-        textSpeaker.speak("当前任务为 " + tasks.get(currentTaskIndex));
+        String split = "";
+        String pinyin = predictor.hanzi2pinyin.get(tasks.get(currentTaskIndex));
+        for (int i =0; i<pinyin.length(); i++) {
+            split += (pinyin.charAt(i) + " ");
+        }
+        textSpeaker.speak("当前任务为 " + tasks.get(currentTaskIndex) + " " + split);
     }
 
     private static String[] PERMISSION = {

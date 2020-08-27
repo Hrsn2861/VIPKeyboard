@@ -18,6 +18,13 @@
         android:src="@drawable/keyboard_background"
         android:scaleType="fitEnd"></com.example.audiokeyboard.KeyboardView>
 
+    <com.example.audiokeyboard.OperationView
+        android:layout_width="match_parent"
+        android:id="@+id/operationView"
+        android:layout_height="200dp"
+        android:background="#0f0"
+        />
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
