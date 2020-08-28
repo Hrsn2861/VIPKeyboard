@@ -331,7 +331,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             super(context);
         }
         public String buildTitle(Context context) {
-            return "【Log】 石伟男" +  " " + yyyy_MM_dd_HH_mm_ss_SS.format(Calendar.getInstance().getTime());
+            return "【Log】 李梦琪" +  " " + yyyy_MM_dd_HH_mm_ss_SS.format(Calendar.getInstance().getTime());
         }
 
     }
