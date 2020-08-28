@@ -122,7 +122,7 @@ public class GestureDetector {
     private VelocityTracker velocityTracker;
     private final float DISTANCE_SQUARE_THRESHOLD = 300;
     private final int maxFlingVelocity = 8000;
-    private final int minFlingVelocity = 50;
+    private final int minFlingVelocity = 500;
     private final int DOUBLE_TAP_TIMEOUT = 300;
     private final int DOUBLE_TAP_MIN_TIME = 40;
     private final int DOUBLE_TAP_SLOP = 100;
@@ -401,7 +401,8 @@ public class GestureDetector {
                     double disdis = disSquare(x1, y1, x2, y2);
 
                     if ((Math.abs(vx) > minFlingVelocity || Math.abs(vy) > minFlingVelocity) && (disdis > DISTANCE_SQUARE_THRESHOLD)) {
-                        //XLog.tag("detector").i("swipe velocity:" + vx +","+ vy + "with" + maxPointerNum + "fingers");
+
+                        Logger.i("swipe velocity:" + vx +","+ vy + "with" + maxPointerNum + "fingers");
                         //Direction dir = recognizeSwipeDirection(points);
                         Direction dir = recognizeSwipeDirectionBySpeed(events);
 

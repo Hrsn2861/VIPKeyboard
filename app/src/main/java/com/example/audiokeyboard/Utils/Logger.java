@@ -17,10 +17,10 @@ public class Logger {
             build().d(msg);
         }
         public void i(String format, Object... args) {
-            build().d(format, args);
+            build().i(format, args);
         }
         public void i(String msg) {
-            build().d(msg);
+            build().i(msg);
         }
         public Logger build() {
             return new Logger(this);
@@ -28,7 +28,6 @@ public class Logger {
     }
     public static String defaultTag = "";
     public static boolean outputToConsole = false;
-    private static Logger sLogger;
     private Logger() {}
     private Logger(Builder b) {
         defaultTag = b.tag;
@@ -47,14 +46,6 @@ public class Logger {
         d(msg);
     }
 
-    public static void d(String tag, String format, Object... args) {
-        String msg = String.format(format, args);
-        d(tag, msg);
-    }
-    public static void d(String tag, String msg) {
-        long timestamp = System.currentTimeMillis();
-        log(timestamp, "D", tag, msg);
-    }
 
     public static void i(String msg) {
         long timestamp = System.currentTimeMillis();
@@ -64,16 +55,6 @@ public class Logger {
     public static void i(String format, Object... args) {
         String msg = String.format(format, args);
         i(msg);
-    }
-
-    public static void i(String tag, String format, Object... args) {
-        String msg = String.format(format, args);
-        i(tag, msg);
-    }
-
-    public static void i(String tag, String msg) {
-        long timestamp = System.currentTimeMillis();
-        log(timestamp, "I", tag, msg);
     }
 
 

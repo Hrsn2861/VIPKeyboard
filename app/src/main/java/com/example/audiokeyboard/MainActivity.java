@@ -13,9 +13,11 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.provider.MediaStore;
@@ -52,6 +54,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -79,7 +82,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
 
     boolean isFirstCharCertain = true;
 
-    int langMode = 0;
+    int langMode = 3;
     final int LANG_ENG = 0;
     final int LANG_CHN_QUANPIN = 1;
     final int LANG_CHN_JIANPIN = 2;
@@ -188,8 +191,8 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     }
 
     void errorAudio() {
-        //pengPlayer.start();
-        warnPlayer.start();
+        pengPlayer.start();
+        //warnPlayer.start();
     }
 
     void initPredictor() {
@@ -295,24 +298,27 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     public void initLog() {
         Logger.setTag("STUDY");
         Logger.outputToConsole = true;
-        System.out.println("Create folder !!!!!");
+//        final float scale = getResources().getDisplayMetrics().density;
+//        System.out.println("swnhieian" + scale);
 
-        File logDir = new File("/sdcard/" + this.getString(this.getApplicationInfo().labelRes) + "/");
-        System.out.println(logDir.getPath());
-        try {
-            if (!logDir.exists()) {
-                System.out.println("mkdir result: " + logDir.mkdirs());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            Logger.tag("EXCEPTION").d(e.getMessage());
-        }
+
+        File logDir = new File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "Log");
+//        System.out.println(logDir.getPath());
+//        try {
+//            if (!logDir.exists()) {
+//                System.out.println("mkdir result: " + logDir.mkdirs());
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            Logger.tag("EXCEPTION").d(e.getMessage());
+//        }
         LogUtil.getInstance()
                 .setCacheSize(300 * 1024 * 1024)//支持设置缓存大小，超出后清空
-                .setLogDir(getApplicationContext(), "/sdcard/" + this.getString(this.getApplicationInfo().labelRes) + "/")//定义路径为：sdcard/[app name]/
+                .setLogDir(getApplicationContext(), logDir.getPath() + "/")
+                //.setLogDir(getApplicationContext(), "/sdcard/" + this.getString(this.getApplicationInfo().labelRes) + "/")//定义路径为：sdcard/[app name]/
                 .setWifiOnly(false)//设置只在Wifi状态下上传，设置为false为Wifi和移动网络都上传
                 .setLogLeve(LogUtil.LOG_LEVE_INFO)//设置为日常日志也会上传
-                .setLogDebugModel(true) //设置是否显示日志信息
+                .setLogDebugModel(false) //设置是否显示日志信息
                 //.setLogContent(LogUtil.LOG_LEVE_CONTENT_NULL)  //设置是否在邮件内容显示附件信息文字
                 .setLogSaver(new CrashWriter(getApplicationContext()))//支持自定义保存崩溃信息的样式
                 //.setEncryption(new AESEncode()) //支持日志到AES加密或者DES加密，默认不开启
@@ -320,11 +326,21 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         initEmailReporter();
     }
 
+    private class CustomEmail extends EmailReporter {
+        public CustomEmail(Context context) {
+            super(context);
+        }
+        public String buildTitle(Context context) {
+            return "【Log】 石伟男" +  " " + yyyy_MM_dd_HH_mm_ss_SS.format(Calendar.getInstance().getTime());
+        }
+
+    }
+
     /**
      * 使用EMAIL发送日志
      */
     private void initEmailReporter() {
-        EmailReporter email = new EmailReporter(this);
+        EmailReporter email = new CustomEmail(this);
         email.setReceiver("swnhieian@126.com");//收件人
         email.setSender("swnhieian@126.com");//发送人邮箱
         email.setSendPassword("IYTYJGRJOWQAVOCH");//邮箱的客户端授权码，注意不是邮箱密码
@@ -775,11 +791,10 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     boolean isDaVoiceHappened = false;
     char lastReadKey = ' ';
     public void processTouchMove(float x, float y) {
-        //if (gestureDetector.isPotentialSwipe()) return;
+//        if (gestureDetector.isPotentialSwipe()) return;
 
         if (isDaFirst()) {//先嗒再读
             char curr = keyPos.getKeyByPosition(x, y, currMode);
-            System.out.println("curr!!!!!" + curr + "!!!!!rruc");
 
             if (!isDaVoiceHappened && !gestureDetector.isPotentialSwipe()) {
                 if (curr == KEY_NOT_FOUND  || curr == ' ')
@@ -1068,7 +1083,6 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
                 }
                 break;
             case DOWN_THEN_LEFT:
-                startStudy();
                 break;
             case DOWN_THEN_RIGHT:
                 readInput();
