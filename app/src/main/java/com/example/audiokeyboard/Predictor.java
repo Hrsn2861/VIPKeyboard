@@ -24,6 +24,7 @@ public class Predictor {
     public HashMap<String, String> hanzi2pinyin;
 
     KeyPos keyPos;
+    final double minTimeGapThreshold = 150.0;
 
     final int LANG_ENG = 0;
     final int LANG_CHN_QUAN = 1;
@@ -92,6 +93,11 @@ public class Predictor {
         return maxPChar;
     }
 
+    double time2possibility(double time) {
+        // return the value from 0 to 1
+        return (-1 / minTimeGapThreshold) * time + 1;
+    }
+
     public double getVIPPossiblilityByChar(DataRecorder recorder, char c, int langMode) {
         double possibility = 0.0;
 
@@ -119,13 +125,13 @@ public class Predictor {
             boolean flag = true;
             double buf = 1.0;
             for(int j=0;j<recorder.getDataLength();j++) {
-                if(recorder.letterAt(j).isCorrect()) {
+                /*if(recorder.letterAt(j).isCorrect()) {
                     if(text.charAt(j) != data.charAt(j)) {
                         flag = false;
                         break;
                     }
-                }
-                buf *= calDiffChar(text.charAt(j), data.charAt(j));
+                }*/
+                buf *= calDiffChar(text.charAt(j), data.charAt(j)) * time2possibility(recorder.getLetterByIndex(j).getTimeGap());
             }
             if(!flag) continue;
             possibility += (buf * dict.get(i).getFreq());
@@ -225,15 +231,9 @@ public class Predictor {
             if(bufWord.getText().length() < data.length()) continue;
             boolean flag = true;
             for(int j=0;j<data.length();j++) {
-                if(recorder.letterAt(j).isCorrect()) {                          // 如果是确定的字符，直接判断是否相等
-                    if(bufWord.getText().charAt(j) != data.charAt(j)) {
-                        flag = false;
-                        break;
-                    }
-                }
-                else {                                                          // 如果字符不确定，需要计算
-                    bufWord.freq *= calDiffChar(bufWord.getText().charAt(j), data.charAt(j));
-                }
+                // 如果字符不确定，需要计算
+                bufWord.freq *= calDiffChar(bufWord.getText().charAt(j), data.charAt(j));
+
                 bufWord.freq *= Math.exp(-Math.abs(bufWord.getText().length() - data.length()));
             }
             if(flag) ret.add(bufWord);

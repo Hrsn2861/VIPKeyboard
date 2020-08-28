@@ -10,26 +10,26 @@ public class Letter {
         this.mPoint = new MotionPoint(0, 0);
         this.ch = ch;
         timeStamp = System.currentTimeMillis();
-        this.isCorrect = true;
+        this.timeGap = 0;
     }
-    public Letter(char ch, long t) {
+    public Letter(char ch, long t, long timeGap) {
         this.mPoint = new MotionPoint(0, 0);
         this.ch = ch;
         this.timeStamp = t;
-        this.isCorrect = true;
+        this.timeGap = timeGap;
     }
 
-    public Letter(char ch, boolean isCorrect) {
+    public Letter(char ch, long timeGap) {
         this.mPoint = new MotionPoint(0, 0);
         this.ch = ch;
         this.timeStamp = System.currentTimeMillis();
-        this.isCorrect = isCorrect;
+        this.timeGap = timeGap;
     }
 
     public void setChar(char ch) {
         this.ch = ch;
         this.timeStamp = System.currentTimeMillis();
-        this.isCorrect = true;
+        this.timeGap = 0;
     }
 
     public void setTouchPoint(float x, float y) {
@@ -40,13 +40,13 @@ public class Letter {
         mPoint = new MotionPoint(x, y);
         this.ch = ch;
         this.timeStamp = System.currentTimeMillis();
-        this.isCorrect = true;
+        this.timeGap = 0;
     }
 
-    public Letter(char ch, boolean isCorrect, float x, float y) {
+    public Letter(char ch, long timeGap, float x, float y) {
         mPoint = new MotionPoint(x, y);
         this.ch = ch;
-        this.isCorrect = isCorrect;
+        this.timeGap = timeGap;
         this.timeStamp = System.currentTimeMillis();
     }
 
@@ -56,17 +56,10 @@ public class Letter {
 
     public char getChar() { return ch; }
 
-    /**
-     * @time 输入时间，default=System.currentTimeMillis()
-     * @return 返回的是现在的时间到这个字符创建的时间
-     */
-    public long getTimeGap() { return getTimeGap(System.currentTimeMillis()); }
-    public long getTimeGap(long time) { return Math.abs(time - this.timeStamp); }
+    public void setCorrect(long c) { this.timeGap = c; }
 
-    public void setCorrect(boolean c) { this.isCorrect = c; }
+    public long getTimeGap() { return this.timeGap; }
 
-    public boolean isCorrect() { return this.isCorrect; }
-
-    boolean isCorrect;
+    long timeGap;
 
 }

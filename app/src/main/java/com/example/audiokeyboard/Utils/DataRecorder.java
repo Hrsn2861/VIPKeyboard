@@ -18,8 +18,8 @@ public class DataRecorder {
 
     public void add(Letter l) { if(l.getChar()!=KEY_NOT_FOUNT) this.dataSeq.add(l); }
     public void add(char ch) { this.add(new Letter(ch)); }
-    public void add(char ch, long time) { this.add(new Letter(ch, time)); }
-    public void add(char ch, boolean isCorrect) { this.add(new Letter(ch, isCorrect)); }
+    public void add(char ch, long time, long timeGap) { this.add(new Letter(ch, time, timeGap)); }
+    public void add(char ch, long timeGap) { this.add(new Letter(ch, timeGap)); }
 
     public void clear() { this.dataSeq.clear(); }
     public Letter removeLast() {
@@ -44,11 +44,7 @@ public class DataRecorder {
         */
         String ret = "";
         for (Letter l: dataSeq) {
-            if (l.isCorrect) {
-                ret += l.getChar();
-            } else {
                 ret += ("<" + l.getChar() + ">");
-            }
         }
         return ret;
     }
