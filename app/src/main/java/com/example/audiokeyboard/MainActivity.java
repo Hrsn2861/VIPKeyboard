@@ -736,7 +736,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         }
     }
 
-    public void processTouchDown(float x ,float y){
+    public void processTouchDown(float x ,float y) {
         if (isDaFirst()) {
             textSpeaker.stop();
             char mostPossible = predictor.getVIPMostPossibleKey(recorder, x, y, langMode);
@@ -1137,12 +1137,11 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             currentChar.setChar(keyPos.getKeyByPosition(x, y, currMode, getkey_mode));
         if(currentChar.getChar() == KEY_NOT_FOUND) return false;
         if(currentChar.getChar() > 'z' || currentChar.getChar() < 'a') return false;
-        if(timeGap > minTimeGapThreshold || ((recorder.getDataLength() == 0) && isFirstCharCertain)) {               // 说明这个时候是确定的字符
-            recorder.add(currentChar.getChar(), true);
-            //mediaPlayer.start();
+        if((recorder.getDataLength() == 0) && isFirstCharCertain) {               // 如果首字母确定
+            recorder.add(currentChar.getChar(), 0);
         }
         else {
-            recorder.add(currentChar.getChar(), false);
+            recorder.add(currentChar.getChar(), timeGap);
         }
         appendText(currentChar.getChar()+"");
         refreshCandidate(0);
