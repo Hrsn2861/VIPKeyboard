@@ -42,14 +42,30 @@ public class OperationView extends View implements GestureDetector.OnGestureList
 
     @Override
     public boolean onDoubleTap(MotionEvent e) {
-        System.out.println("双击at" + e.getX());
-        mainActivity.startStudy();
+        if (e.getX() < 540) {
+            if (!mainActivity.inStudy) {
+                mainActivity.speak("实验开始");
+                mainActivity.startStudy();
+            } else {
+                mainActivity.endStudy();
+            }
+        } else {
+            mainActivity.readStudyTask();
+        }
         return false;
     }
 
     @Override
     public boolean onSingleTapConfirmed(MotionEvent e) {
-        System.out.println("双击xx");
+        if (e.getX() < 540) {
+            if (mainActivity.inStudy) {
+                mainActivity.speak("双击结束实验");
+            } else {
+                mainActivity.speak("双击开始实验");
+            }
+        } else {
+            mainActivity.speak("双击虫听任务");
+        }
         return false;
     }
 

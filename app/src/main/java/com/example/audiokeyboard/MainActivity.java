@@ -30,20 +30,16 @@ import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.elvishew.xlog.LogConfiguration;
-import com.elvishew.xlog.LogLevel;
-import com.elvishew.xlog.XLog;
-import com.elvishew.xlog.flattener.PatternFlattener;
-import com.elvishew.xlog.printer.ConsolePrinter;
-import com.elvishew.xlog.printer.Printer;
-import com.elvishew.xlog.printer.file.FilePrinter;
-import com.elvishew.xlog.printer.file.naming.DateFileNameGenerator;
-import com.elvishew.xlog.printer.file.naming.FileNameGenerator;
+import com.czm.library.LogUtil;
+import com.czm.library.save.imp.CrashWriter;
+import com.czm.library.save.imp.LogWriter;
+import com.czm.library.upload.email.EmailReporter;
 import com.example.audiokeyboard.Utils.DataRecorder;
 import com.example.audiokeyboard.Utils.GestureDetector;
 import com.example.audiokeyboard.Utils.Key;
 import com.example.audiokeyboard.Utils.KeyPos;
 import com.example.audiokeyboard.Utils.Letter;
+import com.example.audiokeyboard.Utils.Logger;
 import com.example.audiokeyboard.Utils.MotionPoint;
 import com.example.audiokeyboard.Utils.MotionSeperator;
 import com.example.audiokeyboard.Utils.PinyinCandidate;
@@ -51,6 +47,7 @@ import com.example.audiokeyboard.Utils.PinyinCandidateList;
 import com.example.audiokeyboard.Utils.Word;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
@@ -295,40 +292,47 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         }
     }
 
-    private void initLog() {
-        // avaiable logtags: RAW_TOUCH_EVENT
-        LogConfiguration config = new LogConfiguration.Builder()
-                .logLevel(LogLevel.ALL)
-                .tag("STUDY")
-                .build();
-        Printer consolePrinter = new ConsolePrinter();
-        Printer filePrinter = new FilePrinter
-                .Builder("/sdcard/VIPKeyboard/")
-                .fileNameGenerator(new FileNameGenerator() {
-                    ThreadLocal<SimpleDateFormat> mLocalDateFormat = new ThreadLocal<SimpleDateFormat>() {
+    public void initLog() {
+        Logger.setTag("STUDY");
+        Logger.outputToConsole = true;
+        System.out.println("Create folder !!!!!");
 
-                        @Override
-                        protected SimpleDateFormat initialValue() {
-                            return new SimpleDateFormat("yyyy-MM-dd", Locale.US);
-                        }
-                    };
-                    @Override
-                    public boolean isFileNameChangeable() {
-                        return true;
-                    }
-
-                    @Override
-                    public String generateFileName(int logLevel, long timestamp) {
-                        SimpleDateFormat sdf = mLocalDateFormat.get();
-                        sdf.setTimeZone(TimeZone.getDefault());
-                        return sdf.format(new Date(timestamp)) + ".log";
-                    }
-                })
-                //.fileNameGenerator(new DateFileNameGenerator())
-                .flattener(new PatternFlattener("{d yyyy-MM-dd HH:mm:ss.SSS}|{l}|{t}|{m}"))
-                .build();
-        XLog.init(config, consolePrinter, filePrinter);
+        File logDir = new File("/sdcard/" + this.getString(this.getApplicationInfo().labelRes) + "/");
+        System.out.println(logDir.getPath());
+        try {
+            if (!logDir.exists()) {
+                System.out.println("mkdir result: " + logDir.mkdirs());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Logger.tag("EXCEPTION").d(e.getMessage());
+        }
+        LogUtil.getInstance()
+                .setCacheSize(300 * 1024 * 1024)//支持设置缓存大小，超出后清空
+                .setLogDir(getApplicationContext(), "/sdcard/" + this.getString(this.getApplicationInfo().labelRes) + "/")//定义路径为：sdcard/[app name]/
+                .setWifiOnly(false)//设置只在Wifi状态下上传，设置为false为Wifi和移动网络都上传
+                .setLogLeve(LogUtil.LOG_LEVE_INFO)//设置为日常日志也会上传
+                .setLogDebugModel(true) //设置是否显示日志信息
+                //.setLogContent(LogUtil.LOG_LEVE_CONTENT_NULL)  //设置是否在邮件内容显示附件信息文字
+                .setLogSaver(new CrashWriter(getApplicationContext()))//支持自定义保存崩溃信息的样式
+                //.setEncryption(new AESEncode()) //支持日志到AES加密或者DES加密，默认不开启
+                .init(getApplicationContext());
+        initEmailReporter();
     }
+
+    /**
+     * 使用EMAIL发送日志
+     */
+    private void initEmailReporter() {
+        EmailReporter email = new EmailReporter(this);
+        email.setReceiver("swnhieian@126.com");//收件人
+        email.setSender("swnhieian@126.com");//发送人邮箱
+        email.setSendPassword("IYTYJGRJOWQAVOCH");//邮箱的客户端授权码，注意不是邮箱密码
+        email.setSMTPHost("smtp.126.com");//SMTP地址
+        email.setPort("465");//SMTP 端口
+        LogUtil.getInstance().setUploadType(email);
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -836,7 +840,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
         float y = event.getY()-keyPos.wholewindowSize+keyPos.partialwindowSize;
-        XLog.tag("RAW_TOUCH_EVENT").i("%s,%f,%f,%d", MotionEvent.actionToString(event.getActionMasked()), x, y, event.getEventTime());
+        Logger.tag("RAW_TOUCH_EVENT").i("%s,%f,%f,%d", MotionEvent.actionToString(event.getActionMasked()), x, y, event.getEventTime());
         gestureDetector.onTouchEvent(event);
         // float y = event.getY();
         switch (event.getActionMasked()) {
@@ -934,7 +938,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
 
         appendText(s + " ");
         speak(s);
-        XLog.tag("STUDY").i("CONFIRM,%s", s);
+        Logger.tag("STUDY").i("CONFIRM,%s", s);
         keyPos.reset();
         refresh();
         refreshCandidate(0);
@@ -978,7 +982,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         keyPos.reset();
         refresh();
         refreshCandidate(0);
-        XLog.tag("STUDY").i("DELETE,%s", inputText);
+        Logger.tag("STUDY").i("DELETE,%s", inputText);
     }
 
     private void previousCandidate() {
@@ -1011,14 +1015,12 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         }
         refreshCandidate(Math.max(0, currCandidateIndex));
         refreshCurrCandidate();
-        XLog.tag("STUDY").i("PREVIOUS,%s", currCandidate);
+        Logger.tag("STUDY").i("PREVIOUS,%s", currCandidate);
     }
 
     private void nextCandidate() {
         textSpeaker.stop();
-        XLog.tag("DEBUG").d(currCandidateIndex);
         currCandidateIndex = Math.min(currCandidateIndex+1, this.candidates.size()-1);
-        XLog.tag("DEBUG").d(currCandidateIndex);
         if(langMode == LANG_CHN_JIANPIN || langMode == LANG_CHN_QUANPIN) {
             if(this.candidates.isEmpty() || this.pinyinCandidateList.size() == 0) {
                 currCandidate = "no candidate";
@@ -1041,12 +1043,12 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
 
         refreshCandidate(Math.max(0, currCandidateIndex));
         refreshCurrCandidate();
-        XLog.tag("STUDY").i("NEXT,%s", currCandidate);
+        Logger.tag("STUDY").i("NEXT,%s", currCandidate);
     }
 
     @Override
     public boolean onSwipe(GestureDetector.Direction direction) {
-        XLog.tag("GESTURE").i("SWIPE" + direction.name());
+        Logger.tag("GESTURE").i("SWIPE" + direction.name());
         switch (direction) {
             case DOWN: //删除
                 delete();
@@ -1108,7 +1110,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     public boolean onTap(MotionEvent event) {
         float x = event.getX();
         float y = event.getY()-keyPos.wholewindowSize+keyPos.partialwindowSize;
-        XLog.tag("GESTURE").i("TAP," + x + "," + y + "," + event.getDownTime() + "," + event.getEventTime());
+        Logger.tag("GESTURE").i("TAP," + x + "," + y + "," + event.getDownTime() + "," + event.getEventTime());
 
         isDaVoiceHappened = false;
         //long timeGap = startPoint.getTimeBetween(endPoint);
@@ -1139,9 +1141,9 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
                 can += (((i == 0) ? "" : ",") + "");
             }
         }
-        XLog.tag("STUDY").i("CANDIDATE,%s", can);
+        Logger.tag("STUDY").i("CANDIDATE,%s", can);
         String debugStr = recorder.getDebugString();
-        XLog.tag("STUDY").i("CHAR,%s", debugStr);
+        Logger.tag("STUDY").i("CHAR,%s", debugStr);
         debugCandidateView.setText(debugStr);
         if(!candidates.isEmpty() && autoSpeakCandidate) {
             speak(candidates.get(0).getText());
@@ -1151,7 +1153,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
 
     @Override
     public boolean on2FingerSwipe(GestureDetector.Direction direction) {
-        XLog.tag("GESTURE").i("2SWIPE" + direction.name());
+        Logger.tag("GESTURE").i("2SWIPE" + direction.name());
         switch (direction) {
             case DOWN: //清空
                 clearAll();
@@ -1169,7 +1171,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
 
     @Override
     public boolean onDoubleTap(MotionEvent event) {
-        XLog.tag("GESTURE").i("DOUBLETAP");
+        Logger.tag("GESTURE").i("DOUBLETAP");
         //confirm();
         return false;
     }
@@ -1186,7 +1188,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         refresh();
         currCandidate = "";
         refreshCurrCandidate();
-        XLog.i("CLEARALL");
+        Logger.i("CLEARALL");
     }
 
     public void debug() {
@@ -1226,7 +1228,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
 
     List<String> testPhrases = new ArrayList<>();
     List<String> tasks = new ArrayList<>();
-    private boolean inStudy = false;
+    public boolean inStudy = false;
     private final int TASK_NUM = 2;
     private int currentTaskIndex = -1;
 
@@ -1275,18 +1277,19 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     public void startStudy() {
         loadTestPhrase();
         langMode = LANG_CHN;
-        XLog.i("STARTTASK");
+        Logger.i("STARTTASK");
         inStudy = true;
         setTitle("实验中");
-        XLog.tag("CONFIG").i("Feedback,%s", isDaFirst()?"DaFirst":"ReadFirst");
-        XLog.tag("CONFIG").i("AutoSpeakCandidate,%s", autoSpeakCandidate?"Yes":"No");
+        Logger.tag("CONFIG").i("Feedback,%s", isDaFirst()?"DaFirst":"ReadFirst");
+        Logger.tag("CONFIG").i("AutoSpeakCandidate,%s", autoSpeakCandidate?"Yes":"No");
         currentTaskIndex = -1;
         clearAll();
         nextStudyTask();
     }
 
     public void endStudy() {
-        XLog.i("ENDTASK");
+        Logger.i("ENDTASK");
+        LogUtil.getInstance().upload(getApplicationContext());
         speak("实验结束，谢谢参与");
         inStudy = false;
         studyPhraseView.setText("");
@@ -1294,7 +1297,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     }
 
     private void nextStudyTask() {
-        XLog.i("NEXTTASK");
+        Logger.i("NEXTTASK");
         currentTaskIndex += 1;
         clearText();
         if (currentTaskIndex == tasks.size()) {
@@ -1303,22 +1306,23 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         }
         String task = tasks.get(currentTaskIndex);
         studyPhraseView.setText(task + predictor.hanzi2pinyin.get(task));
-        XLog.i("TASK,%s,%s", task, predictor.hanzi2pinyin.get(task));
+        Logger.i("TASK,%s,%s", task, predictor.hanzi2pinyin.get(task));
         readStudyTask();
     }
 
     private void previousStudyTask() {
-        XLog.i("PREVTASK");
+        Logger.i("PREVTASK");
         clearAll();
         currentTaskIndex -= 1;
         if (currentTaskIndex < 0) currentTaskIndex = 0;
         String task = tasks.get(currentTaskIndex);
         studyPhraseView.setText(task);
-        XLog.i("TASK,%s,%s", task, predictor.hanzi2pinyin.get(task));
+        Logger.i("TASK,%s,%s", task, predictor.hanzi2pinyin.get(task));
         readStudyTask();
     }
 
-    private void readStudyTask() {
+    public void readStudyTask() {
+        if (!inStudy) return;
         if (currentTaskIndex < 0 || currentTaskIndex >= tasks.size()) return;
         String split = "";
         String pinyin = predictor.hanzi2pinyin.get(tasks.get(currentTaskIndex));
