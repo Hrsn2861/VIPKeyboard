@@ -95,7 +95,8 @@ public class Predictor {
 
     double time2possibility(double time) {
         // return the value from 0 to 1
-        return (-1 / minTimeGapThreshold) * time + 1;
+        if(time > minTimeGapThreshold) return 1.0;
+        return time / minTimeGapThreshold;
     }
 
     public double getVIPPossiblilityByChar(DataRecorder recorder, char c, int langMode) {
@@ -125,12 +126,7 @@ public class Predictor {
             boolean flag = true;
             double buf = 1.0;
             for(int j=0;j<recorder.getDataLength();j++) {
-                if(text.charAt(j) != data.charAt(j)) {
-                    buf *= calDiffChar(text.charAt(j), data.charAt(j)) * time2possibility(recorder.getLetterByIndex(j).getTimeGap());
-                }
-                else {
-                    buf *= calDiffChar(text.charAt(j), data.charAt(j));
-                }
+                buf *= calDiffChar(text.charAt(j), recorder.getLetterByIndex(j));
             }
             if(!flag) continue;
             possibility += (buf * dict.get(i).getFreq());
@@ -194,11 +190,11 @@ public class Predictor {
         return ret;
     }
 
-    double calDiffChar(char target, char curr) {
+    double calDiffChar(char target, Letter curr) {
         double ret = 1.0;
-        if(target == curr) return 1.0;
-        else if(KeyPos.getKeyAround(curr).indexOf(target) == -1) return 0;
-        else return 0.2;
+        if(target == curr.getChar()) return 1.0;
+        else if(KeyPos.getKeyAround(curr.getChar()).indexOf(target) == -1) return 0;
+        else return 0.2 * (1 - time2possibility(curr.getTimeGap()));
         // ret *= Normal(KeyPos.getInitxByChar(target), KeyPos.getInitxByChar(curr), 52.7);
         // ret *= Normal(KeyPos.getInityByChar(target), KeyPos.getInityByChar(curr), 45.8);
         // return ret;
@@ -230,12 +226,8 @@ public class Predictor {
             if(bufWord.getText().length() < data.length()) continue;
             boolean flag = true;
             for(int j=0;j<data.length();j++) {
-                if(bufWord.getText().charAt(j) != data.charAt(j)) {
-                    bufWord.freq *= calDiffChar(bufWord.getText().charAt(j), data.charAt(j)) * time2possibility(recorder.getLetterByIndex(j).getTimeGap());
-                }
-                else {                                                          // 如果字符不确定，需要计算
-                    bufWord.freq *= calDiffChar(bufWord.getText().charAt(j), data.charAt(j));
-                }
+                // 如果字符不确定，需要计算
+                bufWord.freq *= calDiffChar(bufWord.getText().charAt(j), recorder.getLetterByIndex(j));
                 bufWord.freq *= Math.exp(-Math.abs(bufWord.getText().length() - data.length()));
             }
             if(flag) ret.add(bufWord);
