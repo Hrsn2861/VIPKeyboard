@@ -125,13 +125,12 @@ public class Predictor {
             boolean flag = true;
             double buf = 1.0;
             for(int j=0;j<recorder.getDataLength();j++) {
-                /*if(recorder.letterAt(j).isCorrect()) {
-                    if(text.charAt(j) != data.charAt(j)) {
-                        flag = false;
-                        break;
-                    }
-                }*/
-                buf *= calDiffChar(text.charAt(j), data.charAt(j)) * time2possibility(recorder.getLetterByIndex(j).getTimeGap());
+                if(text.charAt(j) != data.charAt(j)) {
+                    buf *= calDiffChar(text.charAt(j), data.charAt(j)) * time2possibility(recorder.getLetterByIndex(j).getTimeGap());
+                }
+                else {
+                    buf *= calDiffChar(text.charAt(j), data.charAt(j));
+                }
             }
             if(!flag) continue;
             possibility += (buf * dict.get(i).getFreq());
@@ -231,9 +230,12 @@ public class Predictor {
             if(bufWord.getText().length() < data.length()) continue;
             boolean flag = true;
             for(int j=0;j<data.length();j++) {
-                // 如果字符不确定，需要计算
-                bufWord.freq *= calDiffChar(bufWord.getText().charAt(j), data.charAt(j));
-
+                if(bufWord.getText().charAt(j) != data.charAt(j)) {
+                    bufWord.freq *= calDiffChar(bufWord.getText().charAt(j), data.charAt(j)) * time2possibility(recorder.getLetterByIndex(j).getTimeGap());
+                }
+                else {                                                          // 如果字符不确定，需要计算
+                    bufWord.freq *= calDiffChar(bufWord.getText().charAt(j), data.charAt(j));
+                }
                 bufWord.freq *= Math.exp(-Math.abs(bufWord.getText().length() - data.length()));
             }
             if(flag) ret.add(bufWord);
