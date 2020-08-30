@@ -1370,7 +1370,15 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         setTitle("VIPKeyboard");
     }
 
-    String userName = "王超";
+    @Override
+    public void onBackPressed() {
+            Intent intent = new Intent();
+            intent.setAction("android.intent.action.MAIN");
+            intent.addCategory("android.intent.category.HOME");
+            startActivity(intent);
+    }
+
+    String userName = "于海荣";
     class SendEmailTask extends AsyncTask<Void, Void, Void> {
 
         private Exception exception;

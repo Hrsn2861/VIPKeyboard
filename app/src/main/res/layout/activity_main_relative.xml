@@ -21,7 +21,7 @@
     <com.example.audiokeyboard.OperationView
         android:layout_width="match_parent"
         android:id="@+id/operationView"
-        android:layout_height="200dp"
+        android:layout_height="150dp"
         android:background="#0f0"
         />
 

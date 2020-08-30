@@ -120,7 +120,8 @@ public class GestureDetector {
         //TODO: cancel long press and taps
     }
     private VelocityTracker velocityTracker;
-    private final float DISTANCE_SQUARE_THRESHOLD = 300;
+    private final float DISTANCE_SQUARE_THRESHOLD = 8000;
+    private final double TOTAL_SPEED_THRESHOLD = 0.3;
     private final int maxFlingVelocity = 8000;
     private final int minFlingVelocity = 500;
     private final int DOUBLE_TAP_TIMEOUT = 300;
@@ -399,9 +400,14 @@ public class GestureDetector {
                     float y1 = currentDownEvent.getY();
                     float y2 = event.getY();
                     double disdis = disSquare(x1, y1, x2, y2);
+                    long eventtime = event.getEventTime() - currentDownEvent.getEventTime();
+                    double totalspeed = Math.sqrt(disdis) / eventtime;
+                    System.out.println("total speed" + totalspeed);
 
-                    if ((Math.abs(vx) > minFlingVelocity || Math.abs(vy) > minFlingVelocity) && (disdis > DISTANCE_SQUARE_THRESHOLD)) {
 
+                    if ((Math.abs(vx) > minFlingVelocity || Math.abs(vy) > minFlingVelocity) && (disdis > DISTANCE_SQUARE_THRESHOLD) && (totalspeed > TOTAL_SPEED_THRESHOLD)) {
+
+                        System.out.println(disdis);
                         Logger.i("swipe velocity:" + vx +","+ vy + "with" + maxPointerNum + "fingers");
                         //Direction dir = recognizeSwipeDirection(points);
                         Direction dir = recognizeSwipeDirectionBySpeed(events);
