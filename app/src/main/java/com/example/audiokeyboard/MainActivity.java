@@ -13,19 +13,17 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.res.Resources;
 import android.media.MediaPlayer;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
 import android.os.RemoteException;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
-import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
@@ -34,14 +32,23 @@ import android.widget.Toast;
 
 import com.czm.library.LogUtil;
 import com.czm.library.save.imp.CrashWriter;
-import com.czm.library.save.imp.LogWriter;
 import com.czm.library.upload.email.EmailReporter;
+import com.elvishew.xlog.LogConfiguration;
+import com.elvishew.xlog.LogLevel;
+import com.elvishew.xlog.XLog;
+import com.elvishew.xlog.flattener.PatternFlattener;
+import com.elvishew.xlog.printer.ConsolePrinter;
+import com.elvishew.xlog.printer.Printer;
+import com.elvishew.xlog.printer.file.FilePrinter;
+import com.elvishew.xlog.printer.file.backup.NeverBackupStrategy;
+import com.elvishew.xlog.printer.file.naming.FileNameGenerator;
 import com.example.audiokeyboard.Utils.DataRecorder;
 import com.example.audiokeyboard.Utils.GestureDetector;
 import com.example.audiokeyboard.Utils.Key;
 import com.example.audiokeyboard.Utils.KeyPos;
 import com.example.audiokeyboard.Utils.Letter;
 import com.example.audiokeyboard.Utils.Logger;
+import com.example.audiokeyboard.Utils.MailReporter;
 import com.example.audiokeyboard.Utils.MotionPoint;
 import com.example.audiokeyboard.Utils.MotionSeperator;
 import com.example.audiokeyboard.Utils.PinyinCandidate;
@@ -324,6 +331,40 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
                 //.setEncryption(new AESEncode()) //支持日志到AES加密或者DES加密，默认不开启
                 .init(getApplicationContext());
         initEmailReporter();
+
+        /////xlog
+        LogConfiguration config = new LogConfiguration.Builder()
+                .logLevel(LogLevel.ALL)
+                .tag("STUDY")
+                .build();
+        Printer consolePrinter = new ConsolePrinter();
+        Printer filePrinter = new FilePrinter
+                .Builder(logDir.getPath())
+                .fileNameGenerator(new FileNameGenerator() {
+                    ThreadLocal<SimpleDateFormat> mLocalDateFormat = new ThreadLocal<SimpleDateFormat>() {
+
+                        @Override
+                        protected SimpleDateFormat initialValue() {
+                            return new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+                        }
+                    };
+                    @Override
+                    public boolean isFileNameChangeable() {
+                        return true;
+                    }
+
+                    @Override
+                    public String generateFileName(int logLevel, long timestamp) {
+                        SimpleDateFormat sdf = mLocalDateFormat.get();
+                        sdf.setTimeZone(TimeZone.getDefault());
+                        return sdf.format(new Date(timestamp)) + ".log";
+                    }
+                })
+                .backupStrategy(new NeverBackupStrategy())
+                //.fileNameGenerator(new DateFileNameGenerator())
+                .flattener(new PatternFlattener("{d yyyy-MM-dd HH:mm:ss.SSS}|{l}|{t}|{m}"))
+                .build();
+        XLog.init(config, consolePrinter, filePrinter);
     }
 
     private class CustomEmail extends EmailReporter {
@@ -331,7 +372,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             super(context);
         }
         public String buildTitle(Context context) {
-            return "【Log】 李梦琪" +  " " + yyyy_MM_dd_HH_mm_ss_SS.format(Calendar.getInstance().getTime());
+            return "【Log】 石伟男" +  " " + yyyy_MM_dd_HH_mm_ss_SS.format(Calendar.getInstance().getTime());
         }
 
     }
@@ -405,6 +446,23 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
                 break;
             default:
                 langMode = LANG_ENG;
+                break;
+        }
+        switch (sharedPreferences.getString("tasknum", "30")) {
+            case "2":
+                TASK_NUM = 2;
+                break;
+            case "20":
+                TASK_NUM = 20;
+                break;
+            case "30":
+                TASK_NUM = 30;
+                break;
+            case "40":
+                TASK_NUM = 40;
+                break;
+            default:
+                TASK_NUM = 20;
                 break;
         }
     }
@@ -863,7 +921,8 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             // case MotionEvent.ACTION_POINTER_DOWN:
                 isTowFingerMotion = false;
                 startPoint.set(x, y);
-                processTouchDown(x, y);
+                processTouchMove(x, y);
+                //processTouchDown(x, y);
                 break;
             case MotionEvent.ACTION_MOVE:
                 processTouchMove(x, y);
@@ -1078,9 +1137,6 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
                 nextCandidate();
                 break;
             case DOWN_THEN_UP:
-                if (inStudy) {
-                    readStudyTask();
-                }
                 break;
             case DOWN_THEN_LEFT:
                 break;
@@ -1088,9 +1144,6 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
                 readInput();
                 break;
             case UP_THEN_RIGHT:
-                if (inStudy) {
-                    endStudy();
-                }
                 break;
             case LEFT_THEN_RIGHT:
                 break;
@@ -1105,7 +1158,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     }
 
     private void help() {
-        speak("左右滑动 切换候选 上滑确认 下滑删除 下左开始实验 下上虫听实验任务 左右虫做前一个任务 下右读当前候选");
+        speak("左右滑动 切换候选 上滑确认 下滑删除 双指下滑清空 双指左滑回到上一个任务");
     }
 
     private void readInput() {
@@ -1125,6 +1178,8 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         float x = event.getX();
         float y = event.getY()-keyPos.wholewindowSize+keyPos.partialwindowSize;
         Logger.tag("GESTURE").i("TAP," + x + "," + y + "," + event.getDownTime() + "," + event.getEventTime());
+        char initChar = keyPos.getKeyByPosition(x, y, Key.MODE_INIT, 0);
+        Logger.tag("STUDY").i("INITCHAR," +  initChar);
 
         isDaVoiceHappened = false;
         //long timeGap = startPoint.getTimeBetween(endPoint);
@@ -1201,7 +1256,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         refresh();
         currCandidate = "";
         refreshCurrCandidate();
-        Logger.i("CLEARALL");
+        Logger.tag("STUDY").i("CLEARALL");
     }
 
     public void debug() {
@@ -1242,13 +1297,13 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     List<String> testPhrases = new ArrayList<>();
     List<String> tasks = new ArrayList<>();
     public boolean inStudy = false;
-    private final int TASK_NUM = 2;
+    private int TASK_NUM = 30;
     private int currentTaskIndex = -1;
 
     private void loadTestPhrase() {
         if (testPhrases.size() == 0) {
             try {
-                InputStream is = getResources().openRawResource(R.raw.chn_test_phrases);
+                InputStream is = getResources().openRawResource(R.raw.chn_test_phrases_full);
                 BufferedReader reader = new BufferedReader(new InputStreamReader(is));
                 String str;
                 while ((str = reader.readLine()) != null) {
@@ -1290,27 +1345,85 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     public void startStudy() {
         loadTestPhrase();
         langMode = LANG_CHN;
-        Logger.i("STARTTASK");
+        Logger.tag("STUDY").i("STARTTASK");
         inStudy = true;
         setTitle("实验中");
         Logger.tag("CONFIG").i("Feedback,%s", isDaFirst()?"DaFirst":"ReadFirst");
         Logger.tag("CONFIG").i("AutoSpeakCandidate,%s", autoSpeakCandidate?"Yes":"No");
+        int height = getWindowManager().getDefaultDisplay().getHeight();
+        int viewHeight = getWindow().findViewById(Window.ID_ANDROID_CONTENT).getHeight();
+        int viewWidth = getWindow().findViewById(Window.ID_ANDROID_CONTENT).getWidth();
+        Logger.tag("CONFIG").i("View,%d,%d,%d", viewHeight, height, viewWidth);
         currentTaskIndex = -1;
         clearAll();
         nextStudyTask();
     }
 
+
     public void endStudy() {
-        Logger.i("ENDTASK");
-        LogUtil.getInstance().upload(getApplicationContext());
+        Logger.tag("STUDY").i("ENDTASK");
+        //LogUtil.getInstance().upload(getApplicationContext());
         speak("实验结束，谢谢参与");
+        uploadLogByEmail();
         inStudy = false;
         studyPhraseView.setText("");
         setTitle("VIPKeyboard");
     }
 
+    String userName = "王超";
+    class SendEmailTask extends AsyncTask<Void, Void, Void> {
+
+        private Exception exception;
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            try {
+                System.out.println("in sending files by email");
+                File logDir = new File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "Log");
+                File[] logs = logDir.listFiles();
+                String date = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+                String title = String.format("[Log %s] %s", userName, date);
+                String body = "上传时间为：" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.sss").format(new Date());
+
+                email.sendEmailWithMultipleFiles(title, body, logs, new MailReporter.OnUploadFinishedListener() {
+                    @Override
+                    public void onSuceess() {
+                        //System.out.println("成功");
+                        speak("实验数据上传成功");
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        System.out.println("实验数据上传失败，请联系实验人员 "+ error);
+                        Logger.tag("STUDY").i("ERROR,%s", error);
+                    }
+                });
+
+
+            } catch (Exception e) {
+                this.exception = e;
+                e.printStackTrace();
+            } finally {
+
+            }
+            return null;
+        }
+    }
+
+    MailReporter email;
+    private void uploadLogByEmail() {
+        email = new MailReporter(getApplicationContext());
+        email.setReceiver("swnhieian@126.com");//收件人
+        email.setSender("swnhieian@126.com");//发送人邮箱
+        email.setSendPassword("IYTYJGRJOWQAVOCH");//邮箱的客户端授权码，注意不是邮箱密码
+        email.setSMTPHost("smtp.126.com");//SMTP地址
+        email.setPort("465");//SMTP 端口
+        System.out.println("ready to start");
+        new SendEmailTask().execute();
+    }
+
     private void nextStudyTask() {
-        Logger.i("NEXTTASK");
+        Logger.tag("STUDY").i("NEXTTASK");
         currentTaskIndex += 1;
         clearText();
         if (currentTaskIndex == tasks.size()) {
@@ -1319,18 +1432,18 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         }
         String task = tasks.get(currentTaskIndex);
         studyPhraseView.setText(task + predictor.hanzi2pinyin.get(task));
-        Logger.i("TASK,%s,%s", task, predictor.hanzi2pinyin.get(task));
+        Logger.tag("STUDY").i("TASK,%s,%s", task, predictor.hanzi2pinyin.get(task));
         readStudyTask();
     }
 
     private void previousStudyTask() {
-        Logger.i("PREVTASK");
+        Logger.tag("STUDY").i("PREVTASK");
         clearAll();
         currentTaskIndex -= 1;
         if (currentTaskIndex < 0) currentTaskIndex = 0;
         String task = tasks.get(currentTaskIndex);
         studyPhraseView.setText(task);
-        Logger.i("TASK,%s,%s", task, predictor.hanzi2pinyin.get(task));
+        Logger.tag("STUDY").i("TASK,%s,%s", task, predictor.hanzi2pinyin.get(task));
         readStudyTask();
     }
 

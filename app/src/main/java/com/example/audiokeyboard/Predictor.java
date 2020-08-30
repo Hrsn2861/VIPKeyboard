@@ -24,7 +24,7 @@ public class Predictor {
     public HashMap<String, String> hanzi2pinyin;
 
     KeyPos keyPos;
-    final double minTimeGapThreshold = 150.0;
+    final double minTimeGapThreshold = 300.0;
 
     final int LANG_ENG = 0;
     final int LANG_CHN_QUAN = 1;

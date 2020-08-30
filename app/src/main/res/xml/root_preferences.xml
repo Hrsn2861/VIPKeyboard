@@ -9,12 +9,19 @@
         app:summaryOn="先嗒再读"/>
 
     <ListPreference
-        app:defaultValue="eng"
         app:entries="@array/lang_entries"
         app:entryValues="@array/lang_values"
         app:key="langmode"
         android:defaultValue="chn"
         app:title="语言选择"
+        app:useSimpleSummaryProvider="true" />
+
+    <ListPreference
+        app:defaultValue="30"
+        app:entries="@array/task_entries"
+        app:entryValues="@array/task_values"
+        app:key="tasknum"
+        app:title="任务个数"
         app:useSimpleSummaryProvider="true" />
 
     <SwitchPreferenceCompat

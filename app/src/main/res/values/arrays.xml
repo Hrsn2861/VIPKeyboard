@@ -23,4 +23,18 @@
         <item>eng</item>
         <item>chn</item>
     </string-array>
+
+    <string-array name="task_entries">
+        <item>2</item>
+        <item>20</item>
+        <item>30</item>
+        <item>40</item>
+    </string-array>
+
+    <string-array name="task_values">
+        <item>2</item>
+        <item>20</item>
+        <item>30</item>
+        <item>40</item>
+    </string-array>
 </resources>
