@@ -921,8 +921,8 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             // case MotionEvent.ACTION_POINTER_DOWN:
                 isTowFingerMotion = false;
                 startPoint.set(x, y);
-                processTouchMove(x, y);
-                //processTouchDown(x, y);
+                //processTouchMove(x, y);
+                processTouchDown(x, y);
                 break;
             case MotionEvent.ACTION_MOVE:
                 processTouchMove(x, y);
@@ -1378,7 +1378,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             startActivity(intent);
     }
 
-    String userName = "于海荣";
+    String userName = "李忠泽";
     class SendEmailTask extends AsyncTask<Void, Void, Void> {
 
         private Exception exception;
@@ -1463,7 +1463,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         for (int i =0; i<pinyin.length(); i++) {
             split += (pinyin.charAt(i) + " ");
         }
-        textSpeaker.speak("当前任务为 " + tasks.get(currentTaskIndex) + " " + split);
+        textSpeaker.speak("当前任务: " + tasks.get(currentTaskIndex) + ", " + split);
     }
 
     private static String[] PERMISSION = {
