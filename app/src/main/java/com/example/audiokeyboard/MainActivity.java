@@ -797,6 +797,17 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     public void processTouchDown(float x ,float y) {
         if (isDaFirst()) {
             textSpeaker.stop();
+
+            char curr = keyPos.getKeyByPosition(x, y, currMode);
+
+            if (!isDaVoiceHappened && !gestureDetector.isPotentialSwipe()) {
+                if (curr == KEY_NOT_FOUND  || curr == ' ')
+                    errorAudio();
+                else
+                    mediaPlayer.start();
+                isDaVoiceHappened = true;
+            }
+
             char mostPossible = predictor.getVIPMostPossibleKey(recorder, x, y, langMode);
             if (y < keyPos.topThreshold) {
                 currentChar.setChar(KEY_NOT_FOUND);                         // 需要清空
@@ -1378,7 +1389,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             startActivity(intent);
     }
 
-    String userName = "李忠泽";
+    String userName = "石伟男";
     class SendEmailTask extends AsyncTask<Void, Void, Void> {
 
         private Exception exception;
