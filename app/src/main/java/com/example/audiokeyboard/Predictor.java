@@ -238,7 +238,10 @@ public class Predictor {
     }
 
     public Word getWordFromPinyin(String str) {
-        return hanzi2word.getOrDefault(str, new Word(str, 0));
+        Word ret = hanzi2word.get(str);
+        if(ret == null) return new Word(str, 0);
+        else return ret;
+        // return hanzi2word.getOrDefault(str, new Word(str, 0));
     }
 
     public boolean checkHanzi2Pinyin(String hanzi, String pinyin) {

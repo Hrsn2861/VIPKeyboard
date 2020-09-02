@@ -401,7 +401,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
 
         initLog();
         init();
-        initPinyin();
+        // initPinyin();
         debug();
     }
 
@@ -858,7 +858,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     }
 
     boolean isDaVoiceHappened = false;
-    char lastReadKey = ' ';
+    char lastReadKey = '_';
     public void processTouchMove(float x, float y) {
 //        if (gestureDetector.isPotentialSwipe()) return;
 
@@ -877,6 +877,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             }
             ////
             if (curr != lastReadKey && System.currentTimeMillis() - startPoint.getTime() > minTimeGapThreshold) {
+                if (lastReadKey != '_')
                 mediaPlayer.start();
                 if (curr != KEY_NOT_FOUND && curr != ' ')
                     textSpeaker.speak(curr + "");
@@ -940,7 +941,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
                 break;
             case MotionEvent.ACTION_UP:
             // case MotionEvent.ACTION_POINTER_UP:
-                lastReadKey = ' ';
+                lastReadKey = '_';
                 isDaVoiceHappened = false;
                 endPoint.set(x, y);
                 processTouchUp(x, y);
@@ -1389,7 +1390,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             startActivity(intent);
     }
 
-    String userName = "石伟男";
+    String userName = "张惠雯";
     class SendEmailTask extends AsyncTask<Void, Void, Void> {
 
         private Exception exception;

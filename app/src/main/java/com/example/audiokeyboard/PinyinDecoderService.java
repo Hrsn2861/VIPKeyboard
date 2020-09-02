@@ -138,7 +138,6 @@ public class PinyinDecoderService extends Service {
         } catch (FileNotFoundException e) {
         } catch (IOException e) {
         }
-
         initPinyinEngine();
     }
 
