@@ -24,6 +24,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
@@ -116,6 +117,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     TextView currCandidateView;
     TextView debugCandidateView;
     TextView studyPhraseView;
+    OperationView operationView;
     ArrayList<Word> candidates;
 
     // record the edge pointer moved along
@@ -141,6 +143,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
     //settings variables
     boolean isDaFirst = true;
     boolean autoSpeakCandidate = true;
+    boolean showOperationView = true;
     //
     public IPinyinDecoderService mIPinyinDecoderService = null;
     public PinyinDecoderServiceConnection mPinyinDecoderServiceConnection = null;
@@ -179,6 +182,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         currCandidateView = (TextView) (findViewById(R.id.currCandidate));
         debugCandidateView = (TextView)(findViewById(R.id.debugCandidate));
         studyPhraseView = findViewById(R.id.studyText);
+        operationView = findViewById(R.id.operationView);
         recorder = new DataRecorder();
         currentChar = new Letter('*');
         initTts();
@@ -417,9 +421,6 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             case R.id.action_settings:
                 startActivityForResult(new Intent(this, SettingsActivity.class), SETTINGS_CODE);
                 break;
-            case R.id.action_startStudy:
-                startStudy();
-                break;
             default:
                 break;
         }
@@ -431,7 +432,12 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
         isDaFirst = sharedPreferences.getBoolean("feedback", true);
         isFirstCharCertain = sharedPreferences.getBoolean("firstChar", false);
         autoSpeakCandidate = sharedPreferences.getBoolean("autoSpeakCandidate", true);
-        switch (sharedPreferences.getString("langmode", "eng")) {
+        showOperationView = sharedPreferences.getBoolean("showOpertaionView", true);
+        if (operationView != null) {
+            operationView.getBackground().setAlpha(showOperationView ? 255 : 0);
+            debugCandidateView.setVisibility(View.INVISIBLE);
+        }
+        switch (sharedPreferences.getString("langmode", "chn")) {
             case "quanpin":
                 langMode = LANG_CHN_QUANPIN;
                 break;
@@ -1390,7 +1396,7 @@ public class MainActivity extends AppCompatActivity implements GestureDetector.o
             startActivity(intent);
     }
 
-    String userName = "张惠雯";
+    String userName = "王宾";
     class SendEmailTask extends AsyncTask<Void, Void, Void> {
 
         private Exception exception;

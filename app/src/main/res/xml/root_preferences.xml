@@ -38,6 +38,13 @@
         app:summaryOff="否"
         app:summaryOn="是"/>
 
+    <SwitchPreferenceCompat
+        app:key="showOpertaionView"
+        app:title="是否显示操作膜"
+        app:defaultValue="true"
+        app:summaryOff="否"
+        app:summaryOn="是"/>
+
     <PreferenceCategory app:title="@string/messages_header">
 
         <Preference
